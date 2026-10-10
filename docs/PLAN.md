@@ -176,6 +176,18 @@ Chaque tour d'enchères commence à gauche du bouton (à gauche de la grosse bli
 
 **Cas à tester en priorité** : heads-up (le bouton paie la petite blinde et parle en premier au pré-flop), relance minimale, tapis inférieur à la relance minimale, égalité et partage du pot (jeton impair au premier joueur après le bouton).
 
+**Règles précisées pendant l'itération 2**
+
+- Les montants de `bet` et `raise` sont des totaux pour le tour (« relancer à 60 »), pas des incréments.
+- Se coucher n'est possible que face à une mise : quand le check est gratuit, `fold` est refusé (évite les erreurs de clic).
+- Un tapis inférieur à la relance minimale oblige les autres à rejouer, mais ne rouvre la relance qu'à ceux qui n'ont pas encore parlé. Simplification : plusieurs tapis incomplets qui totalisent une relance complète ne rouvrent pas non plus la relance.
+- Si la grosse blinde est à tapis pour moins qu'une grosse blinde, les autres doivent quand même suivre une grosse blinde complète.
+- La part d'une mise que personne n'a suivie est rendue à la fin du tour.
+- Pas de cartes brûlées : elles n'apportent rien avec un mélange `SecureRandom`.
+- Quand plus personne ne peut miser (tous à tapis), le moteur distribue le tableau d'un coup ; c'est au serveur d'étaler l'animation.
+- À l'abattage, tous les joueurs encore en jeu montrent leurs cartes (pas de cartes jetées face cachée en v1).
+- Le bouton passe au joueur suivant qui a des jetons, en sautant sièges vides et joueurs ruinés (pas de règle du « bouton mort »).
+
 ## Protocole WebSocket
 
 Le client envoie des intentions, le serveur les valide et renvoie l'état complet de la table, filtré pour chaque joueur. Le client n'a jamais à recalculer les règles : il affiche ce qu'il reçoit.
@@ -260,6 +272,7 @@ Six itérations, chacune terminée par quelque chose qui tourne. Le moteur passe
 2. **Moteur d'une main**
    - Blindes, distribution, 4 tours d'enchères, tapis, pots secondaires, abattage
    - Terminé quand : une main complète se joue en test unitaire, y compris un tapis à 3 joueurs avec pot secondaire
+   - **Fait** : `Hand` (machine à états), `BettingRound`, `Pot.split`, `Table` (sièges, bouton) ; un test joue 5 000 mains aléatoires et vérifie la conservation des jetons
 3. **Serveur Quarkus**
    - `TableManager`, endpoint WebSocket, messages `join`, `action`, `state`, minuteur
    - Terminé quand : deux clients de test (ou `websocat`) jouent une main de bout en bout
