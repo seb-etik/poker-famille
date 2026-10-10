@@ -30,6 +30,27 @@ public final class Deck {
         this.cards = new ArrayDeque<>(all);
     }
 
+    private Deck(List<Card> order) {
+        this.cards = new ArrayDeque<>(order);
+    }
+
+    /** A deck that deals the given cards first, then the others: only for tests that script a hand. */
+    static Deck withTopCards(List<Card> topCards) {
+        List<Card> order = new ArrayList<>(topCards);
+        for (Suit suit : Suit.values()) {
+            for (Rank rank : Rank.values()) {
+                Card card = new Card(rank, suit);
+                if (!order.contains(card)) {
+                    order.add(card);
+                }
+            }
+        }
+        if (order.size() != 52) {
+            throw new IllegalArgumentException("Duplicate cards in " + topCards);
+        }
+        return new Deck(order);
+    }
+
     public Card draw() {
         if (cards.isEmpty()) {
             throw new IllegalStateException("The deck is empty");
