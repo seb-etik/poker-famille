@@ -7,6 +7,7 @@ import {
   raiseShortcuts,
   rotateSeats,
   seatPosition,
+  soundFor,
   totalPot,
   winningCards,
 } from './table.js';
@@ -160,5 +161,20 @@ describe('dealDelay', () => {
   it('spreads the streets when they all come at once after an all-in', () => {
     expect([0, 1, 2, 3, 4].map((i) => dealDelay(i, 0))).toEqual([0, 150, 300, 1000, 2000]);
     expect([3, 4].map((i) => dealDelay(i, 3))).toEqual([0, 1000]);
+  });
+});
+
+describe('soundFor', () => {
+  it('gives each event its sound', () => {
+    expect(soundFor({ name: 'handStarted' })).toBe('deal');
+    expect(soundFor({ name: 'board', stage: 'flop', cards: ['AS', 'KD', '7C'] })).toBe('card');
+    expect(soundFor({ name: 'action', action: 'fold' })).toBe('fold');
+    expect(soundFor({ name: 'action', action: 'check' })).toBe('check');
+    expect(soundFor({ name: 'action', action: 'raise' })).toBe('chips');
+    expect(soundFor({ name: 'win', payouts: [] })).toBe('win');
+  });
+
+  it('stays silent for the showdown itself', () => {
+    expect(soundFor({ name: 'showdown' })).toBeNull();
   });
 });

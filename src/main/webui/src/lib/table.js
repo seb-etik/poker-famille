@@ -137,3 +137,19 @@ export function dealDelay(index, firstNewIndex) {
   const withinFlop = index < 3 ? index * FLOP_CARD_GAP_MS : 0;
   return (street(index) - street(firstNewIndex)) * STREET_PAUSE_MS + withinFlop;
 }
+
+/** Name of the sound for an event (see sounds.js), or null for a silent one. */
+export function soundFor(event) {
+  switch (event.name) {
+    case 'handStarted':
+      return 'deal';
+    case 'board':
+      return 'card';
+    case 'win':
+      return 'win';
+    case 'action':
+      return event.action === 'fold' ? 'fold' : event.action === 'check' ? 'check' : 'chips';
+    default:
+      return null;
+  }
+}

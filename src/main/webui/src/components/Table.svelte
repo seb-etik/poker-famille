@@ -4,7 +4,8 @@
   import Card from './Card.svelte';
   import Seat from './Seat.svelte';
   import { TableConnection } from '../lib/connection.svelte.js';
-  import { categoryLabel, dealDelay, rotateSeats, seatPosition, totalPot, winningCards } from '../lib/table.js';
+  import { categoryLabel, dealDelay, rotateSeats, seatPosition, soundFor, totalPot, winningCards } from '../lib/table.js';
+  import { isMuted, play, setMuted } from '../lib/sounds.js';
   import { dropIn } from '../lib/transitions.js';
 
   let { code, profile, onExit } = $props();
@@ -44,6 +45,10 @@
   let flights = $state([]);
   let streetsInBatch = 0;
   const unsubscribe = connection.onEvent((event) => {
+    const sound = soundFor(event);
+    if (sound) {
+      play(sound);
+    }
     if (event.name === 'board') {
       streetsInBatch++;
     } else if (event.name === 'win') {
@@ -67,6 +72,21 @@
     flights = [...flights, ...launched];
     setTimeout(() => (flights = flights.filter((f) => !launched.includes(f))), wait + 1200);
   }
+
+  let muted = $state(isMuted());
+
+  function toggleSound() {
+    muted = !muted;
+    setMuted(muted);
+  }
+
+  // A chime when it becomes my turn.
+  const myTurn = $derived(handRunning && mySeat !== null && hand.toActSeat === mySeat);
+  $effect(() => {
+    if (myTurn) {
+      play('turn');
+    }
+  });
 
   const winnerSeats = $derived(
     new Set(state?.lastResult?.payouts.flatMap((payout) => Object.keys(payout.winners).map(Number)) ?? []),
@@ -102,11 +122,14 @@
   <header>
     <button class="link" onclick={onExit}>← Accueil</button>
     <button class="code" onclick={share}>Table {code} {copied ? '✓ lien copié' : '⤴'}</button>
-    {#if mySeat !== null}
-      <button class="link" onclick={() => connection.leave()}>Se lever</button>
-    {:else}
-      <span></span>
-    {/if}
+    <span class="tools">
+      <button class="link" onclick={toggleSound} aria-label={muted ? 'Activer le son' : 'Couper le son'}>
+        {muted ? '🔇' : '🔊'}
+      </button>
+      {#if mySeat !== null}
+        <button class="link" onclick={() => connection.leave()}>Se lever</button>
+      {/if}
+    </span>
   </header>
 
   {#if connection.status === 'notFound'}
@@ -196,6 +219,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 1rem;
+  }
+  .tools {
+    display: flex;
+    gap: 0.25rem;
   }
   .link {
     background: none;
