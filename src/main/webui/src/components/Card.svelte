@@ -30,13 +30,13 @@
 <style>
   .card {
     display: inline-block;
-    width: 3rem;
+    width: 2.7rem;
     aspect-ratio: 167 / 243;
     perspective: 30rem;
     flex: none;
   }
-  .card.small {
-    width: 2.1rem;
+  .card.mini {
+    width: 1.55rem;
   }
   .card.large {
     width: 3.6rem;

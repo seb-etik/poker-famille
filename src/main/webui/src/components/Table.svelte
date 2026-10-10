@@ -137,15 +137,17 @@
   {:else if !state}
     <p class="notice">Connexion…</p>
   {:else}
-    {#if connection.status !== 'open'}<p class="banner">Reconnexion…</p>{/if}
-
     <div class="table">
+      {#if connection.status !== 'open'}<p class="banner">Reconnexion…</p>{/if}
+
       <div class="felt">
         <div class="center">
           {#if hand}
             <div class="board">
               {#each hand.board as card, i (card)}
-                <span in:dropIn={{ delay: dealDelay(i, previousBoard.length) }}><Card code={card} highlight={highlight.includes(card)} dim={highlight.length > 0 && !highlight.includes(card)} /></span>
+                <span in:dropIn={{ delay: dealDelay(i, previousBoard.length) }}>
+                  <Card code={card} highlight={highlight.includes(card)} dim={highlight.length > 0 && !highlight.includes(card)} />
+                </span>
               {/each}
             </div>
             <div class="pot">Pot : {totalPot(state)}</div>
@@ -154,51 +156,65 @@
               {seatedCount < 2 ? 'Choisissez vos places' : state.you.isHost ? '' : "En attente de l'hôte…"}
             </div>
           {/if}
+          {#if state.lastResult}
+            <div class="result">{winnersText(state.lastResult)}</div>
+          {:else if connection.log[0]}
+            <div class="last-action">{connection.log[0]}</div>
+          {/if}
           {#if state.table.status === 'waiting' && state.you.isHost && playersWithChips >= 2}
             <button class="primary" onclick={() => connection.start()}>Lancer la partie</button>
           {/if}
         </div>
       </div>
 
-      {#each rotateSeats(state.seats, mySeat) as place (place.number)}
-        {@const position = seatPosition(place.position)}
-        <div class="place" style="left: {position.left}%; top: {position.top}%">
-          {#if place.seat}
-            <Seat
-              seat={place.seat}
-              isMe={place.number === mySeat}
-              isButton={hand?.buttonSeat === place.number}
-              {handRunning}
-              highlightCards={highlight}
-              handNumber={hand?.number ?? 0}
-              position={place.position}
-              winner={winnerSeats.has(place.number)}
-              toAct={handRunning && hand.toActSeat === place.number}
-              remainingMs={hand?.toActSeat === place.number ? remainingMs : null}
-            />
-          {:else if mySeat === null}
-            <button class="sit" onclick={() => connection.sit(place.number)}>S'asseoir</button>
+      <!-- The other players around the oval; my own seat is in the strip below. -->
+      <div class="places">
+        {#each rotateSeats(state.seats, mySeat) as place (place.number)}
+          {#if place.number !== mySeat}
+            {@const position = seatPosition(place.position)}
+            <div class="place" style="left: {position.left}%; top: {position.top}%">
+              {#if place.seat}
+                <Seat
+                  seat={place.seat}
+                  isButton={hand?.buttonSeat === place.number}
+                  {handRunning}
+                  highlightCards={highlight}
+                  handNumber={hand?.number ?? 0}
+                  position={place.position}
+                  winner={winnerSeats.has(place.number)}
+                  toAct={handRunning && hand.toActSeat === place.number}
+                  remainingMs={hand?.toActSeat === place.number ? remainingMs : null}
+                />
+              {:else if mySeat === null}
+                <button class="sit" onclick={() => connection.sit(place.number)}>S'asseoir</button>
+              {/if}
+            </div>
           {/if}
-        </div>
-      {/each}
+        {/each}
 
-      {#each flights as flight (flight.id)}
-        <div
-          class="flight"
-          style="--to-left: {flight.left}%; --to-top: {flight.top}%; animation-delay: {flight.wait}ms"
-        >
-          +{flight.amount}
-        </div>
-      {/each}
+        {#each flights as flight (flight.id)}
+          <div class="flight" style="--to-left: {flight.left}%; --to-top: {flight.top}%; animation-delay: {flight.wait}ms">
+            +{flight.amount}
+          </div>
+        {/each}
+      </div>
     </div>
 
-    {#if state.lastResult}
-      <p class="result">{winnersText(state.lastResult)}</p>
+    {#if mySeat !== null && state.seats[mySeat]}
+      <div class="me">
+        <Seat
+          variant="me"
+          seat={state.seats[mySeat]}
+          isButton={hand?.buttonSeat === mySeat}
+          {handRunning}
+          highlightCards={highlight}
+          handNumber={hand?.number ?? 0}
+          winner={winnerSeats.has(mySeat)}
+          toAct={myTurn}
+          remainingMs={myTurn ? remainingMs : null}
+        />
+      </div>
     {/if}
-
-    <ul class="log">
-      {#each connection.log as line, i (i)}<li>{line}</li>{/each}
-    </ul>
 
     {#if connection.error}<p class="error">{connection.error}</p>{/if}
   {/if}
@@ -209,16 +225,18 @@
 </div>
 
 <style>
+  /* One screen, no scrolling: header, table (takes what is left), my strip, actions. */
   .screen {
     display: flex;
     flex-direction: column;
-    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
   }
   header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 1rem;
+    padding: calc(0.25rem + env(safe-area-inset-top)) 0.5rem 0.25rem;
   }
   .tools {
     display: flex;
@@ -231,19 +249,22 @@
   .code {
     font-weight: 700;
     letter-spacing: 0.1em;
+    padding: 0.4rem 0.7rem;
   }
   .table {
     position: relative;
-    width: min(100%, 30rem, calc((100dvh - 16rem) * 0.75));
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 32rem;
     margin: 0 auto;
-    aspect-ratio: 3 / 4;
   }
   .felt {
     position: absolute;
-    inset: 14% 12%;
+    inset: 2.6rem 2.4rem 1.8rem;
     border-radius: 50%;
     background: radial-gradient(#1f7a4a, #0f4a2c);
-    border: 0.6rem solid #5a3a1f;
+    border: 0.5rem solid #5a3a1f;
     display: grid;
     place-items: center;
   }
@@ -251,21 +272,43 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
+    max-width: 90%;
+    text-align: center;
   }
   .board {
     display: flex;
-    gap: 0.25rem;
-    min-height: 3.4rem;
+    gap: 0.2rem;
+    min-height: 3.9rem;
   }
   .pot {
     font-weight: 700;
     color: #fff;
-    text-align: center;
+  }
+  .result {
+    font-weight: 700;
+    color: #ffd23f;
+    font-size: 0.85rem;
+  }
+  .last-action {
+    font-size: 0.8rem;
+    opacity: 0.85;
+  }
+  /* Seats sit on the rim of the felt; this box keeps the outer ones on screen. */
+  .places {
+    position: absolute;
+    inset: 2.3rem 2.9rem 1.4rem;
+    pointer-events: none;
   }
   .place {
     position: absolute;
     transform: translate(-50%, -50%);
+    pointer-events: auto;
+  }
+  .me {
+    padding: 0.5rem 1rem;
+    border-top: 1px solid #2b4d3b;
+    background: #0e2218;
   }
   .flight {
     position: absolute;
@@ -310,29 +353,19 @@
     background: #b8860b;
     min-height: 2.6rem;
   }
-  .notice,
-  .banner {
+  .notice {
     text-align: center;
   }
   .banner {
-    background: #7a5a10;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     margin: 0;
     padding: 0.25rem;
-  }
-  .result {
+    background: #7a5a10;
     text-align: center;
-    font-weight: 700;
-    color: #ffd23f;
-    margin: 0.25rem 1rem;
-  }
-  .log {
-    list-style: none;
-    margin: 0 auto;
-    padding: 0 1rem;
-    max-width: 30rem;
-    font-size: 0.85rem;
-    opacity: 0.8;
-    flex: 1;
+    z-index: 2;
   }
   .error {
     position: fixed;
@@ -343,5 +376,6 @@
     border-radius: 0.5rem;
     background: #7a2230;
     text-align: center;
+    z-index: 3;
   }
 </style>

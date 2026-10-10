@@ -31,21 +31,6 @@ export function totalPot(state) {
   return pots + bets;
 }
 
-/**
- * "Raise to" amounts for the shortcut buttons. A pot-sized raise first calls,
- * then raises by the size of the pot after that call.
- */
-export function raiseShortcuts(state) {
-  const { minAmount, maxAmount, callAmount } = state.allowedActions;
-  const potAfterCall = totalPot(state) + callAmount;
-  const clamp = (amount) => Math.min(maxAmount, Math.max(minAmount, Math.floor(amount)));
-  return {
-    halfPot: clamp(state.hand.currentBet + potAfterCall / 2),
-    pot: clamp(state.hand.currentBet + potAfterCall),
-    allIn: maxAmount,
-  };
-}
-
 const SUITS = { S: '♠', H: '♥', D: '♦', C: '♣' };
 
 export function cardLabel(code) {
