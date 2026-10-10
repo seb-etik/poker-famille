@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import Avatar from './Avatar.svelte';
   import { gallery } from '../lib/avatars.js';
+  import { install, promptInstall } from '../lib/install.svelte.js';
   import { saveProfile } from '../lib/profile.js';
   import { backUrl, faceUrl, THEMES } from '../lib/themes.js';
 
@@ -89,6 +90,10 @@
   </form>
 
   {#if error}<p class="error">{error}</p>{/if}
+
+  {#if install.prompt}
+    <button class="install" onclick={promptInstall}>📲 Installer l'appli sur ce téléphone</button>
+  {/if}
 </main>
 
 <style>
@@ -182,6 +187,10 @@
     text-transform: uppercase;
     letter-spacing: 0.3em;
     text-align: center;
+  }
+  .install {
+    background: none;
+    border: 1px solid #2b5a41;
   }
   .error {
     color: #ff8a8a;
