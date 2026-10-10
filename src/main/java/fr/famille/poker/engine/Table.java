@@ -55,6 +55,16 @@ public final class Table {
         seats.get(seatNumber).sit(player);
     }
 
+    /** Frees a seat and returns its player; not allowed for a seat dealt in the hand in progress. */
+    public Player leave(int seatNumber) {
+        Seat seat = seats.get(seatNumber);
+        boolean dealtIn = currentHand != null && !currentHand.isComplete() && currentHand.seats().contains(seat);
+        if (dealtIn) {
+            throw new IllegalStateException("Seat " + seatNumber + " is in the hand in progress");
+        }
+        return seat.vacate();
+    }
+
     /** Deals a new hand to every seated player who has chips, the button moving one player on. */
     public Hand startHand(Deck deck) {
         if (currentHand != null && !currentHand.isComplete()) {

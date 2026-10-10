@@ -57,6 +57,13 @@ public final class Seat {
         this.player = Objects.requireNonNull(player, "player");
     }
 
+    Player vacate() {
+        Player leaving = player();
+        player = null;
+        sitOut();
+        return leaving;
+    }
+
     void startHand() {
         holeCards.clear();
         bet = 0;

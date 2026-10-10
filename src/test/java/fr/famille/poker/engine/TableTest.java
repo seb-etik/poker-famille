@@ -111,7 +111,36 @@ class TableTest {
         assertEquals(hand, table.currentHand().orElseThrow());
     }
 
-    /** Starts a hand and folds it at once. */
+    @Test
+    void leavingFreesTheSeat() {
+        Table table = tableWith(0, 1);
+
+        Player left = table.leave(1);
+
+        assertEquals("player-1", left.id());
+        assertTrue(table.seats().get(1).isEmpty());
+    }
+
+    @Test
+    void cannotLeaveASeatDealtInTheCurrentHand() {
+        Table table = tableWith(0, 1);
+        table.startHand(new Deck());
+
+        assertThrows(IllegalStateException.class, () -> table.leave(1));
+    }
+
+    @Test
+    void mayLeaveASeatSittingOutDuringAHand() {
+        Table table = tableWith(0, 1);
+        table.sit(2, player("broke", 0));
+        table.startHand(new Deck());
+
+        table.leave(2);
+
+        assertTrue(table.seats().get(2).isEmpty());
+    }
+
+        /** Starts a hand and folds it at once. */
     private static Hand playQuickHand(Table table) {
         Hand hand = table.startHand(new Deck());
         while (!hand.isComplete()) {
