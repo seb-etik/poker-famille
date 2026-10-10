@@ -1,0 +1,17 @@
+# Traefik passes WebSockets through as is; the client ping every 25 s keeps them open.
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: poker-famille
+  namespace: sbu
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`poker.sbu.playersgroupe.fr`)
+      services:
+        - name: poker-famille
+          port: 8080
+  tls:
+    secretName: poker-famille-cert

@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: poker-famille-cert
+  namespace: sbu
+spec:
+  commonName: poker.sbu.playersgroupe.fr
+  dnsNames:
+    - poker.sbu.playersgroupe.fr
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  secretName: poker-famille-cert
