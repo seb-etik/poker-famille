@@ -104,7 +104,7 @@ quarkus.quinoa.package-manager-install=true
 quarkus.quinoa.package-manager-install.node-version=24.21.0
 quarkus.quinoa.build-dir=dist
 quarkus.quinoa.enable-spa-routing=true
-quarkus.quinoa.ignored-path-prefixes=/ws,/q
+quarkus.quinoa.ignored-path-prefixes=/ws,/q,/api
 # en dev, Quinoa lance Vite et fait proxy (rechargement à chaud)
 quarkus.quinoa.dev-server.port=5173
 ```
@@ -278,6 +278,7 @@ Six itérations, chacune terminée par quelque chose qui tourne. Le moteur passe
 3. **Serveur Quarkus**
    - `TableManager`, endpoint WebSocket, messages `join`, `action`, `state`, minuteur
    - Terminé quand : deux clients de test (ou `websocat`) jouent une main de bout en bout
+   - **Fait** : `GameTable` (Java pur, testée avec un faux `Outbox` et un faux `Scheduler`), `TableManager`, `TableEndpoint`, `POST /api/tables`, minuteurs Vert.x, purge des tables abandonnées ; `TableEndpointTest` fait jouer une main complète à deux clients WebSocket. Délais réglables par `poker.*` dans `application.properties`
 4. **Front minimal**
    - Svelte : accueil sans fioritures, table fonctionnelle, barre d'actions, reconnexion
    - Terminé quand : trois onglets de navigateur jouent une partie complète
