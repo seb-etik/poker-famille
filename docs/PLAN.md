@@ -263,6 +263,17 @@ Un Deployment à un seul replica, un Service et un Ingress avec TLS suffisent. L
 - **Redéploiement** : il efface les parties en cours ; déployer hors des sessions de jeu
 - **Option** : l'extension `quarkus-kubernetes` peut générer les manifests à partir de `application.properties`
 
+**Mise en œuvre retenue (itération 5)** — remplace les points nginx ci-dessus :
+
+- Cluster : namespace `sbu` existant ; Ingress **Traefik** (`IngressRoute`, entrée `websecure`), qui relaie les WebSockets sans réglage ; le ping client toutes les 25 s les garde ouverts.
+- TLS : `Certificate` cert-manager émis par le `ClusterIssuer` `letsencrypt-prod`.
+- Domaine : `poker.sbu.playersgroupe.fr`, entrée DNS `CNAME lb.preprod.playersgroupe.fr` (pas de wildcard).
+- Image : `ghcr.io/seb-etik/poker-famille`, paquet public (pas de secret de pull), tags `latest` et `sha-<commit>`.
+- CI GitHub Actions : `./mvnw verify` sur chaque pull request et sur `main` ; sur `main`, build et push de l'image.
+- Déploiement manuel, hors des parties en cours :
+  - premier déploiement : `kubectl apply -k k8s/`
+  - nouvelle version : `kubectl -n sbu rollout restart deployment/poker-famille` (image `latest`, `imagePullPolicy: Always`)
+
 ## Plan d'itérations
 
 Six itérations, chacune terminée par quelque chose qui tourne. Le moteur passe en premier, car c'est le cœur et il se teste sans interface.
@@ -286,6 +297,7 @@ Six itérations, chacune terminée par quelque chose qui tourne. Le moteur passe
 5. **Déploiement**
    - Image, manifests, Ingress, TLS sur le cluster, CI GitHub Actions
    - Terminé quand : une partie se joue depuis deux téléphones en 4G
+   - **Fait** : `Dockerfile`, `k8s/` (kustomize), `.github/workflows/ci.yml` ; reste à valider le critère sur téléphones
 6. **Finition visuelle** (avant de montrer à la famille)
    - Avatars, thèmes de cartes, animations, sons, installation PWA
    - Terminé quand : la partie test en famille est lancée

@@ -55,10 +55,11 @@ puis reportée dans `docs/PLAN.md`.
   chacun limité à ses dossiers ; l'intégration et la relecture se font ensuite dans la session principale.
 - Petits commits, un sujet par commit ; `./mvnw test` doit passer avant chaque commit.
 
-## CI et déploiement (à confirmer avec l'utilisateur)
+## CI et déploiement
 
-- GitHub Actions : sur chaque pull request, `./mvnw verify` ; sur `main`, build et push de l'image
-  vers GitHub Container Registry (ghcr.io).
-- Le cluster est personnel et probablement non joignable depuis GitHub : privilégier un déploiement
-  « pull » (Argo CD ou Flux) ou un `kubectl apply` manuel plutôt qu'un déploiement poussé par la CI.
-  Demander à l'utilisateur ce qui est installé sur son cluster avant d'écrire cette partie.
+- Dépôt : `github.com-seb-etik:seb-etik/poker-famille.git` (alias SSH du compte seb-etik).
+- GitHub Actions : `./mvnw verify` sur chaque pull request et sur `main` ; sur `main`, build et push de
+  l'image publique `ghcr.io/seb-etik/poker-famille` (tags `latest` et `sha-…`).
+- Déploiement manuel par l'utilisateur dans le namespace `sbu` : `kubectl apply -k k8s/`, puis
+  `kubectl -n sbu rollout restart deployment/poker-famille` pour une nouvelle version. Ne jamais appliquer
+  sur le cluster sans demande explicite. Détails dans `docs/PLAN.md`, section « Déploiement Kubernetes ».
