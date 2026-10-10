@@ -382,8 +382,8 @@ public final class GameTable {
         Integer toAct = hand.toAct().isPresent() ? hand.toAct().getAsInt() : null;
         Long remainingMs = toAct == null ? null
                 : Math.max(0, Duration.between(clock.instant(), actionDeadline).toMillis());
-        return new HandView(handNumber, ProtocolNames.of(hand.stage()), hand.buttonSeat(), codes(hand.board()),
-                pots, hand.currentBet(), toAct, remainingMs);
+        return new HandView(handNumber, ProtocolNames.of(hand.stage()), hand.buttonSeat(), hand.smallBlindSeat(),
+                hand.bigBlindSeat(), codes(hand.board()), pots, hand.currentBet(), toAct, remainingMs);
     }
 
     private static AllowedActionsView allowedView(AllowedActions allowed) {

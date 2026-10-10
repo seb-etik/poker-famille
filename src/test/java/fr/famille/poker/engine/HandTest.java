@@ -39,6 +39,22 @@ class HandTest {
         }
 
         @Test
+        void tellsWhichSeatsPostTheBlinds() {
+            Hand hand = start(List.of(seat(1, 1000), seat(4, 1000), seat(6, 1000)), 6, new Deck());
+
+            assertEquals(1, hand.smallBlindSeat());
+            assertEquals(4, hand.bigBlindSeat());
+        }
+
+        @Test
+        void headsUpTheButtonIsTheSmallBlind() {
+            Hand hand = start(List.of(seat(3, 1000), seat(5, 1000)), 3, new Deck());
+
+            assertEquals(3, hand.smallBlindSeat());
+            assertEquals(5, hand.bigBlindSeat());
+        }
+
+        @Test
         void firstToActPreflopSitsLeftOfTheBigBlind() {
             Hand hand = start(seats(1000, 1000, 1000, 1000), 0, new Deck());
 

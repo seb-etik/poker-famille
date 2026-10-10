@@ -28,6 +28,8 @@ public final class Hand {
     private Stage stage = Stage.PRE_FLOP;
     private BettingRound round;
     private int toActIndex = -1;
+    private int smallBlindIndex;
+    private int bigBlindIndex;
     private HandResult result;
 
     private Hand(List<Seat> seats, int buttonIndex, int bigBlind, Deck deck) {
@@ -61,8 +63,8 @@ public final class Hand {
     private void begin(int smallBlind) {
         seats.forEach(Seat::startHand);
         // Heads-up, the button posts the small blind.
-        int smallBlindIndex = seats.size() == 2 ? buttonIndex : next(buttonIndex);
-        int bigBlindIndex = next(smallBlindIndex);
+        smallBlindIndex = seats.size() == 2 ? buttonIndex : next(buttonIndex);
+        bigBlindIndex = next(smallBlindIndex);
         seats.get(smallBlindIndex).pay(smallBlind);
         seats.get(bigBlindIndex).pay(bigBlind);
         // Even when the big blind is short, the others must match a full big blind.
@@ -90,6 +92,14 @@ public final class Hand {
 
     public int buttonSeat() {
         return seats.get(buttonIndex).number();
+    }
+
+    public int smallBlindSeat() {
+        return seats.get(smallBlindIndex).number();
+    }
+
+    public int bigBlindSeat() {
+        return seats.get(bigBlindIndex).number();
     }
 
     public List<Card> board() {

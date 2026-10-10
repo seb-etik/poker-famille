@@ -97,6 +97,8 @@ Envoyé après `join` puis après chaque changement. Exemple pendant une main, v
     "number": 4,
     "stage": "preflop",
     "buttonSeat": 0,
+    "smallBlindSeat": 1,
+    "bigBlindSeat": 2,
     "board": [],
     "pots": [],
     "currentBet": 30,
@@ -125,6 +127,7 @@ Champs :
   - `cards` : les deux cartes, **uniquement** pour le destinataire, ou pour tous à l'abattage ; sinon `null`.
 - `hand` : `null` hors d'une main.
   - `stage` : `preflop`, `flop`, `turn`, `river`, `complete`.
+  - `smallBlindSeat` / `bigBlindSeat` : sièges qui ont payé la petite et la grosse blinde (en heads-up, le bouton paie la petite). Les montants sont dans `table.smallBlind` / `table.bigBlind`.
   - `pots` : `[{ "amount": 450, "seats": [0, 1, 2] }, …]`, pot principal d'abord ; sièges éligibles.
   - `toActSeat` : `null` quand la main est terminée. `remainingMs` : temps restant pour agir.
 - `allowedActions` : non `null` seulement pour le joueur qui doit parler. `callAmount` : jetons qu'ajoute

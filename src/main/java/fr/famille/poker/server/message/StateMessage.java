@@ -25,8 +25,8 @@ public record StateMessage(
             boolean connected, boolean hasCards, List<String> cards) {
     }
 
-    public record HandView(int number, String stage, int buttonSeat, List<String> board, List<PotView> pots,
-            int currentBet, Integer toActSeat, Long remainingMs) {
+    public record HandView(int number, String stage, int buttonSeat, int smallBlindSeat, int bigBlindSeat,
+            List<String> board, List<PotView> pots, int currentBet, Integer toActSeat, Long remainingMs) {
     }
 
     public record PotView(int amount, List<Integer> seats) {

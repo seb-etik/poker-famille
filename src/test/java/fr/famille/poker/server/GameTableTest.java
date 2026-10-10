@@ -104,6 +104,8 @@ class GameTableTest {
         assertEquals("preflop", state.hand().stage());
         assertEquals(0, state.hand().toActSeat());
         assertEquals(30_000L, state.hand().remainingMs());
+        assertEquals(0, state.hand().smallBlindSeat());
+        assertEquals(1, state.hand().bigBlindSeat());
     }
 
     @Test
