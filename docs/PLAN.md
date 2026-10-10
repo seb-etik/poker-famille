@@ -194,6 +194,8 @@ Le client envoie des intentions, le serveur les valide et renvoie l'état comple
 
 Endpoint : `wss://<domaine>/ws/table/{code}`. Messages en JSON avec un champ `type`.
 
+**Le contrat détaillé (champs, exemples, codes d'erreur) est figé dans `docs/PROTOCOL.md`**, qui fait foi. Ajouts par rapport à ce tableau : création de table par `POST /api/tables`, messages `pong` et `leave` sans numéro de siège, événements renommés (`handStarted`, `action`, `board`, `showdown`, `win`).
+
 | Sens | Type | Contenu |
 | --- | --- | --- |
 | Client → serveur | `join` | `playerId` (UUID stocké localement), `nickname`, `avatar` |
