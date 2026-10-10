@@ -101,7 +101,7 @@ poker-famille/
 ```properties
 # Quinoa installe Node lui-même : rien à préinstaller, ni en local ni dans Docker
 quarkus.quinoa.package-manager-install=true
-quarkus.quinoa.package-manager-install.node-version=20.18.0
+quarkus.quinoa.package-manager-install.node-version=24.21.0
 quarkus.quinoa.build-dir=dist
 quarkus.quinoa.enable-spa-routing=true
 quarkus.quinoa.ignored-path-prefixes=/ws,/q
@@ -138,7 +138,7 @@ ENTRYPOINT ["java", "-jar", "quarkus-run.jar"]
 
 **`.dockerignore`** : `target/`, `src/main/webui/node_modules/`, `src/main/webui/dist/`.
 
-Vérifier la version de Quinoa compatible avec la version de Quarkus sur la page Quarkiverse, et la version de Node à jour au moment du démarrage.
+Versions retenues au démarrage (10 octobre 2026) : Quarkus 3.40.1, Quinoa 2.9.2 (choisie par le CLI Quarkus pour cette plateforme), Node 24.21.0 LTS, Svelte 5, Vite 8. Node 20.18.0, prévu initialement, est écarté : Node 20 est en fin de vie et Vite 8 exige Node 20.19 ou plus.
 
 ## Modèle de domaine et déroulé d'une main
 
@@ -256,6 +256,7 @@ Six itérations, chacune terminée par quelque chose qui tourne. Le moteur passe
 1. **Évaluateur de mains**
    - Modèle `Card`, `Rank`, `Suit`, `Deck` ; évaluation des 9 catégories de mains et départage par kickers
    - Terminé quand : tests couvrant chaque catégorie, les égalités et la quinte basse A-2-3-4-5
+   - **Fait** : `HandEvaluator` essaie les 21 combinaisons de 5 cartes ; `HandRank` se compare par catégorie puis départageurs (égalité = `compareTo == 0`)
 2. **Moteur d'une main**
    - Blindes, distribution, 4 tours d'enchères, tapis, pots secondaires, abattage
    - Terminé quand : une main complète se joue en test unitaire, y compris un tapis à 3 joueurs avec pot secondaire
