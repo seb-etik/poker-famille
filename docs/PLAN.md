@@ -282,6 +282,7 @@ Six itérations, chacune terminée par quelque chose qui tourne. Le moteur passe
 4. **Front minimal**
    - Svelte : accueil sans fioritures, table fonctionnelle, barre d'actions, reconnexion
    - Terminé quand : trois onglets de navigateur jouent une partie complète
+   - **Fait** : accueil, table, barre d'actions, reconnexion (backoff + retour au premier plan), testés dans Chrome avec trois onglets jusqu'à la ruine de deux joueurs. Le paramètre d'URL `?as=<nom>` donne à un onglet son propre profil (sinon `localStorage` est partagé par tous les onglets) ; avatars en emoji en attendant l'itération 6
 5. **Déploiement**
    - Image, manifests, Ingress, TLS sur le cluster, CI GitHub Actions
    - Terminé quand : une partie se joue depuis deux téléphones en 4G

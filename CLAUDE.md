@@ -22,7 +22,9 @@ puis reportée dans `docs/PLAN.md`.
 ## Commandes
 
 - `quarkus dev` ou `./mvnw quarkus:dev` : back et front en mode dev, rechargement à chaud
-- `./mvnw test` : tests
+- `./mvnw test` : tests Java (moteur, serveur, intégration WebSocket)
+- `npm test` dans `src/main/webui` : tests Vitest du front (aussi lancés par `./mvnw package`)
+- Tester à plusieurs dans un navigateur : `http://localhost:8080/?as=mamie`, `?as=papa`… (un profil par onglet)
 - `./mvnw package` : build complet (Svelte + jar) dans `target/quarkus-app/`
 - `docker build -t poker-famille .` : image complète
 
