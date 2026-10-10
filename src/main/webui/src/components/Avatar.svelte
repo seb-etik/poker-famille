@@ -9,7 +9,7 @@
 {#if src}
   <img {src} alt="" style="width: {size}; height: {size}" />
 {:else}
-  <span class="emoji" style="width: {size}; height: {size}; font-size: calc({size} * 0.6)">{legacyEmoji(id)}</span>
+  <span class="emoji" style="width: {size}; height: {size}">{legacyEmoji(id)}</span>
 {/if}
 
 <style>
@@ -20,5 +20,6 @@
   .emoji {
     display: grid;
     place-items: center;
+    font-size: 1.6rem;
   }
 </style>

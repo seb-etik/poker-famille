@@ -4,7 +4,8 @@
   import Card from './Card.svelte';
   import Seat from './Seat.svelte';
   import { TableConnection } from '../lib/connection.svelte.js';
-  import { categoryLabel, rotateSeats, seatPosition, totalPot, winningCards } from '../lib/table.js';
+  import { categoryLabel, dealDelay, rotateSeats, seatPosition, totalPot, winningCards } from '../lib/table.js';
+  import { dropIn } from '../lib/transitions.js';
 
   let { code, profile, onExit } = $props();
 
@@ -31,6 +32,45 @@
   const shareUrl = $derived(`${location.origin}/table/${code}`);
 
   let copied = $state(false);
+
+  // Board length before the last update: the cards after it are the new ones to deal.
+  // Not reactive on purpose: read when the new cards are created, updated after the render.
+  const previousBoard = { length: 0 };
+  $effect(() => {
+    previousBoard.length = hand?.board.length ?? 0;
+  });
+
+  // The pot flies to the winners once the board is fully dealt.
+  let flights = $state([]);
+  let streetsInBatch = 0;
+  const unsubscribe = connection.onEvent((event) => {
+    if (event.name === 'board') {
+      streetsInBatch++;
+    } else if (event.name === 'win') {
+      const wait = 400 + Math.max(0, streetsInBatch - 1) * 1000;
+      launchFlights(event.payouts, wait);
+      streetsInBatch = 0;
+    } else {
+      streetsInBatch = 0;
+    }
+  });
+  onDestroy(unsubscribe);
+
+  function launchFlights(payouts, wait) {
+    const places = rotateSeats(state.seats, mySeat);
+    const launched = payouts.flatMap((payout) =>
+      Object.entries(payout.winners).map(([seat, amount]) => {
+        const place = places.find((p) => p.number === Number(seat));
+        return { id: `${Date.now()}-${seat}-${amount}`, amount, wait, ...seatPosition(place.position) };
+      }),
+    );
+    flights = [...flights, ...launched];
+    setTimeout(() => (flights = flights.filter((f) => !launched.includes(f))), wait + 1200);
+  }
+
+  const winnerSeats = $derived(
+    new Set(state?.lastResult?.payouts.flatMap((payout) => Object.keys(payout.winners).map(Number)) ?? []),
+  );
 
   async function share() {
     try {
@@ -81,8 +121,8 @@
         <div class="center">
           {#if hand}
             <div class="board">
-              {#each hand.board as card (card)}
-                <Card code={card} highlight={highlight.includes(card)} dim={highlight.length > 0 && !highlight.includes(card)} />
+              {#each hand.board as card, i (card)}
+                <span in:dropIn={{ delay: dealDelay(i, previousBoard.length) }}><Card code={card} highlight={highlight.includes(card)} dim={highlight.length > 0 && !highlight.includes(card)} /></span>
               {/each}
             </div>
             <div class="pot">Pot : {totalPot(state)}</div>
@@ -107,12 +147,24 @@
               isButton={hand?.buttonSeat === place.number}
               {handRunning}
               highlightCards={highlight}
+              handNumber={hand?.number ?? 0}
+              position={place.position}
+              winner={winnerSeats.has(place.number)}
               toAct={handRunning && hand.toActSeat === place.number}
               remainingMs={hand?.toActSeat === place.number ? remainingMs : null}
             />
           {:else if mySeat === null}
             <button class="sit" onclick={() => connection.sit(place.number)}>S'asseoir</button>
           {/if}
+        </div>
+      {/each}
+
+      {#each flights as flight (flight.id)}
+        <div
+          class="flight"
+          style="--to-left: {flight.left}%; --to-top: {flight.top}%; animation-delay: {flight.wait}ms"
+        >
+          +{flight.amount}
         </div>
       {/each}
     </div>
@@ -187,6 +239,40 @@
   .place {
     position: absolute;
     transform: translate(-50%, -50%);
+  }
+  .flight {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 0.15rem 0.5rem;
+    border-radius: 1rem;
+    background: #ffd23f;
+    color: #000;
+    font-weight: 700;
+    opacity: 0;
+    pointer-events: none;
+    animation: flight 1s ease-in-out forwards;
+  }
+  @keyframes flight {
+    0% {
+      left: 50%;
+      top: 50%;
+      opacity: 1;
+    }
+    75% {
+      opacity: 1;
+    }
+    100% {
+      left: var(--to-left);
+      top: var(--to-top);
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .flight {
+      display: none;
+    }
   }
   .sit {
     font-size: 0.75rem;

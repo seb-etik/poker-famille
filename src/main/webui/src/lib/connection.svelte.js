@@ -27,12 +27,19 @@ export class TableConnection {
   #retryTimer = null;
   #errorTimer = null;
   #closed = false;
+  #listeners = new Set();
 
   constructor(code, profile) {
     this.#code = code;
     this.#profile = profile;
     document.addEventListener('visibilitychange', this.#onVisibilityChange);
     this.#connect();
+  }
+
+  /** Calls `listener(event)` for every event, before the state it leads to; returns the unsubscribe. */
+  onEvent(listener) {
+    this.#listeners.add(listener);
+    return () => this.#listeners.delete(listener);
   }
 
   sit(seat) {
@@ -106,6 +113,7 @@ export class TableConnection {
         this.receivedAt = performance.now();
         break;
       case 'event': {
+        this.#listeners.forEach((listener) => listener(message));
         const line = describeEvent(message, this.state?.seats ?? []);
         if (line) {
           this.log = [line, ...this.log].slice(0, LOG_SIZE);

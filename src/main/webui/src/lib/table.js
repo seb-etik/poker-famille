@@ -123,3 +123,17 @@ export function winningCards(state) {
   const winners = Object.keys(result.payouts[0].winners);
   return [...new Set(winners.flatMap((seat) => result.shownHands[seat]?.cards ?? []))];
 }
+
+const STREET_PAUSE_MS = 1000;
+const FLOP_CARD_GAP_MS = 150;
+
+/**
+ * Delay before showing board card `index`, when the cards from `firstNewIndex` on just arrived.
+ * Flop cards come one after the other; when several streets arrive at once (all-in), each one
+ * waits for the previous one.
+ */
+export function dealDelay(index, firstNewIndex) {
+  const street = (i) => (i < 3 ? 0 : i - 2);
+  const withinFlop = index < 3 ? index * FLOP_CARD_GAP_MS : 0;
+  return (street(index) - street(firstNewIndex)) * STREET_PAUSE_MS + withinFlop;
+}

@@ -1,8 +1,17 @@
 <script>
   import Card from './Card.svelte';
   import Avatar from './Avatar.svelte';
+  import { fromCenter, toCenter } from '../lib/transitions.js';
 
-  let { seat, isMe = false, isButton = false, handRunning = false, toAct = false, remainingMs = null, actionSeconds = 30, highlightCards = [] } = $props();
+  let { seat, isMe = false, isButton = false, handRunning = false, toAct = false, remainingMs = null, actionSeconds = 30, highlightCards = [], handNumber = 0, position = 0, winner = false } = $props();
+
+  // Bets sit between the player and the centre of the table, like chips pushed forward.
+  const angle = $derived(Math.PI / 2 + (position * Math.PI) / 4);
+  // Other seats have their cards below the avatar: their bet goes a little further.
+  const betDistance = $derived(isMe ? 3.4 : 4.8);
+  const betStyle = $derived(
+    `left: calc(50% - ${Math.cos(angle) * betDistance}rem); top: calc(50% - ${Math.sin(angle) * betDistance}rem)`,
+  );
 
   const progress = $derived(remainingMs == null ? 0 : Math.min(1, remainingMs / (actionSeconds * 1000)));
 </script>
@@ -13,35 +22,47 @@
   class:folded={seat.status === 'folded'}
   class:away={!seat.connected}
   class:to-act={toAct}
+  class:winner
   style="--progress: {progress}"
 >
-  <div class="avatar">
-    <Avatar id={seat.avatar} size="100%" />
-    {#if isButton}<span class="dealer">D</span>{/if}
-  </div>
-  <div class="name">{seat.nickname}</div>
-  <div class="stack">
-    {#if handRunning && seat.status === 'allIn'}Tapis{:else}{seat.stack}{/if}
+  <div class="identity">
+    <div class="avatar">
+      <Avatar id={seat.avatar} size="100%" />
+      {#if isButton}<span class="dealer">D</span>{/if}
+    </div>
+    <div class="name">{seat.nickname}</div>
+    <div class="stack">
+      {#if handRunning && seat.status === 'allIn'}Tapis{:else}{seat.stack}{/if}
+    </div>
+    {#if !seat.connected}<div class="badge">déconnecté</div>{/if}
   </div>
   {#if seat.cards || seat.hasCards}
-    <div class="cards">
-      {#each [0, 1] as i (i)}
-        <Card code={seat.cards?.[i] ?? null} size={isMe ? 'normal' : 'small'}
-          highlight={highlightCards.includes(seat.cards?.[i])}
-          dim={highlightCards.length > 0 && !highlightCards.includes(seat.cards?.[i])} />
-      {/each}
-    </div>
+    <!-- Recreated on each hand, so that the new cards are dealt again. -->
+    {#key handNumber}
+      <div class="cards">
+        {#each [0, 1] as i (i)}
+          <span class="slot" in:fromCenter|global={{ delay: i * 300 + position * 40 }}>
+            <Card
+              code={seat.cards?.[i] ?? null}
+              size={isMe ? 'normal' : 'small'}
+              highlight={highlightCards.includes(seat.cards?.[i])}
+              dim={highlightCards.length > 0 && !highlightCards.includes(seat.cards?.[i])}
+            />
+          </span>
+        {/each}
+      </div>
+    {/key}
   {/if}
-  {#if seat.bet > 0}<div class="bet">{seat.bet}</div>{/if}
-  {#if !seat.connected}<div class="badge">déconnecté</div>{/if}
+  {#if seat.bet > 0}<div class="bet" style={betStyle} out:toCenter>{seat.bet}</div>{/if}
 </div>
 
 <style>
   .seat {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.1rem;
+    gap: 0.2rem;
     min-width: 4.5rem;
     font-size: 0.8rem;
     color: #fff;
@@ -67,6 +88,17 @@
       linear-gradient(#0d3b26, #0d3b26) padding-box,
       conic-gradient(#ffd23f calc(var(--progress) * 360deg), #555 0) border-box;
     box-shadow: 0 0 0.8rem #ffd23f;
+  }
+  .winner .avatar {
+    animation: shine 1.2s ease-in-out 3;
+  }
+  @keyframes shine {
+    50% {
+      box-shadow: 0 0 1.4rem 0.4rem #ffd23f;
+    }
+  }
+  .slot {
+    display: inline-block;
   }
   .dealer {
     position: absolute;
@@ -99,8 +131,21 @@
     display: flex;
     gap: 0.15rem;
   }
+  .identity {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+  }
+  /* My own seat: cards beside me rather than below, to keep the bottom of the screen free. */
+  .me {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
   .bet {
-    margin-top: 0.1rem;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
     padding: 0 0.4rem;
     border-radius: 1rem;
     background: #ffd23f;

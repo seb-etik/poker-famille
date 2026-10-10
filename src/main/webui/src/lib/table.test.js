@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   cardLabel,
   categoryLabel,
+  dealDelay,
   describeEvent,
   raiseShortcuts,
   rotateSeats,
@@ -143,5 +144,21 @@ describe('winningCards', () => {
   it('is empty without a showdown', () => {
     expect(winningCards({ lastResult: { payouts: [{ amount: 15, winners: { 0: 15 } }], shownHands: {} } })).toEqual([]);
     expect(winningCards({ lastResult: null })).toEqual([]);
+  });
+});
+
+describe('dealDelay', () => {
+  it('deals the flop one card after the other', () => {
+    expect([0, 1, 2].map((i) => dealDelay(i, 0))).toEqual([0, 150, 300]);
+  });
+
+  it('shows the turn or the river at once when it comes alone', () => {
+    expect(dealDelay(3, 3)).toBe(0);
+    expect(dealDelay(4, 4)).toBe(0);
+  });
+
+  it('spreads the streets when they all come at once after an all-in', () => {
+    expect([0, 1, 2, 3, 4].map((i) => dealDelay(i, 0))).toEqual([0, 150, 300, 1000, 2000]);
+    expect([3, 4].map((i) => dealDelay(i, 3))).toEqual([0, 1000]);
   });
 });
