@@ -11,6 +11,7 @@
     seat,
     variant = 'opponent',
     isButton = false,
+    blind = null,
     handRunning = false,
     toAct = false,
     remainingMs = null,
@@ -42,6 +43,11 @@
   <div class="avatar">
     <Avatar id={seat.avatar} size="100%" />
     {#if isButton}<span class="dealer">D</span>{/if}
+    {#if blind}
+      <span class="blind {blind}" title={blind === 'small' ? 'Petite blinde' : 'Grosse blinde'}>
+        {blind === 'small' ? 'PB' : 'GB'}
+      </span>
+    {/if}
   </div>
 
   <div class="identity">
@@ -155,6 +161,24 @@
     font-weight: 700;
     display: grid;
     place-items: center;
+  }
+
+  .blind {
+    position: absolute;
+    left: -0.45rem;
+    bottom: -0.25rem;
+    padding: 0 0.2rem;
+    border-radius: 0.5rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 1rem;
+    color: #fff;
+  }
+  .blind.small {
+    background: #2d66b3;
+  }
+  .blind.big {
+    background: #b8860b;
   }
 
   .identity {

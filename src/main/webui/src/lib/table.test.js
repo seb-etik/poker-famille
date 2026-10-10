@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  blindOf,
   cardLabel,
   categoryLabel,
   dealDelay,
@@ -147,5 +148,19 @@ describe('soundFor', () => {
 
   it('stays silent for the showdown itself', () => {
     expect(soundFor({ name: 'showdown' })).toBeNull();
+  });
+});
+
+describe('blindOf', () => {
+  const hand = { buttonSeat: 6, smallBlindSeat: 1, bigBlindSeat: 4 };
+
+  it('tells which blind a seat posted', () => {
+    expect(blindOf(hand, 1)).toBe('small');
+    expect(blindOf(hand, 4)).toBe('big');
+    expect(blindOf(hand, 6)).toBeNull();
+  });
+
+  it('is null without a hand', () => {
+    expect(blindOf(null, 1)).toBeNull();
   });
 });

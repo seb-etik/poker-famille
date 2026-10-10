@@ -138,3 +138,14 @@ export function soundFor(event) {
       return null;
   }
 }
+
+/** 'small' or 'big' when this seat posted a blind in the hand, as the server tells it; otherwise null. */
+export function blindOf(hand, seat) {
+  if (!hand) {
+    return null;
+  }
+  if (hand.smallBlindSeat === seat) {
+    return 'small';
+  }
+  return hand.bigBlindSeat === seat ? 'big' : null;
+}
