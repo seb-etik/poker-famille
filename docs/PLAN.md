@@ -301,6 +301,13 @@ Six itérations, chacune terminée par quelque chose qui tourne. Le moteur passe
 6. **Finition visuelle** (avant de montrer à la famille)
    - Avatars, thèmes de cartes, animations, sons, installation PWA
    - Terminé quand : la partie test en famille est lancée
+   - **Fait** :
+     - thèmes `classique` (jeu SVG de Byron Knoll, domaine public, optimisé avec SVGO) et `famille` (dos maison, mêmes faces : `theme.json` → `faces`) ;
+     - avatars DiceBear Lorelei (CC0) générés localement, identifiant `lorelei:<graine>` ; les anciens avatars emoji restent affichés ;
+     - animations (distribution depuis le centre, tableau rue par rue, mises vers le pot, pot vers le gagnant, retournement à l'abattage, main gagnante surlignée), coupées si `prefers-reduced-motion` ;
+     - sons synthétisés avec la Web Audio API, bouton pour les couper ;
+     - PWA : manifest, icônes (`npm run icons`), service worker Workbox, bouton d'installation sur Android ;
+     - cache HTTP : `index.html` revalidé à chaque chargement, `assets/` gardé un an, cartes une semaine ; compression gzip
 
 ## Évolutions possibles
 
