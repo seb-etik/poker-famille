@@ -113,3 +113,13 @@ function describeAction({ action, amount }) {
       return action;
   }
 }
+
+/** The five cards of the main pot winners' best hand, to highlight after a showdown. */
+export function winningCards(state) {
+  const result = state.lastResult;
+  if (!result || result.payouts.length === 0) {
+    return [];
+  }
+  const winners = Object.keys(result.payouts[0].winners);
+  return [...new Set(winners.flatMap((seat) => result.shownHands[seat]?.cards ?? []))];
+}

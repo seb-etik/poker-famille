@@ -1,9 +1,12 @@
 <script>
+  import { setContext } from 'svelte';
   import Home from './components/Home.svelte';
   import Table from './components/Table.svelte';
   import { loadProfile } from './lib/profile.js';
 
   let profile = $state(loadProfile());
+  // Cards read the theme through the context: a getter, so that a change reaches them.
+  setContext('theme', () => profile.theme);
   let path = $state(location.pathname);
 
   const tableCode = $derived(path.match(/^\/table\/([A-Za-z]{4})\/?$/)?.[1]?.toUpperCase() ?? null);

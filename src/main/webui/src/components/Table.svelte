@@ -4,7 +4,7 @@
   import Card from './Card.svelte';
   import Seat from './Seat.svelte';
   import { TableConnection } from '../lib/connection.svelte.js';
-  import { categoryLabel, rotateSeats, seatPosition, totalPot } from '../lib/table.js';
+  import { categoryLabel, rotateSeats, seatPosition, totalPot, winningCards } from '../lib/table.js';
 
   let { code, profile, onExit } = $props();
 
@@ -27,6 +27,7 @@
   const remainingMs = $derived(
     hand?.remainingMs == null ? null : Math.max(0, hand.remainingMs - (now - connection.receivedAt)),
   );
+  const highlight = $derived(state ? winningCards(state) : []);
   const shareUrl = $derived(`${location.origin}/table/${code}`);
 
   let copied = $state(false);
@@ -80,7 +81,9 @@
         <div class="center">
           {#if hand}
             <div class="board">
-              {#each hand.board as card (card)}<Card code={card} />{/each}
+              {#each hand.board as card (card)}
+                <Card code={card} highlight={highlight.includes(card)} dim={highlight.length > 0 && !highlight.includes(card)} />
+              {/each}
             </div>
             <div class="pot">Pot : {totalPot(state)}</div>
           {:else}
@@ -103,6 +106,7 @@
               isMe={place.number === mySeat}
               isButton={hand?.buttonSeat === place.number}
               {handRunning}
+              highlightCards={highlight}
               toAct={handRunning && hand.toActSeat === place.number}
               remainingMs={hand?.toActSeat === place.number ? remainingMs : null}
             />

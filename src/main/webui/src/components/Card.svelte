@@ -1,45 +1,79 @@
 <script>
-  import { cardLabel } from '../lib/table.js';
+  import { getContext } from 'svelte';
+  import { backUrl, faceUrl } from '../lib/themes.js';
 
-  /** code: "AS"; null shows the back of the card. */
-  let { code = null, size = 'normal' } = $props();
+  /**
+   * code: "AS", or null for a card seen from the back. Going from null to a code flips the card.
+   * highlight / dim: to show the winning hand.
+   */
+  let { code = null, size = 'normal', highlight = false, dim = false } = $props();
 
-  const label = $derived(code ? cardLabel(code) : null);
+  const theme = getContext('theme');
+  // Keeps the face once known, so that the flip shows it while turning.
+  let shownCode = $state(null);
+  $effect.pre(() => {
+    if (code) {
+      shownCode = code;
+    }
+  });
 </script>
 
-{#if label}
-  <span class="card {size}" class:red={label.red}>
-    <span class="rank">{label.rank}</span><span class="suit">{label.suit}</span>
+<span class="card {size}" class:face-down={!code} class:highlight class:dim>
+  <span class="inner">
+    {#if shownCode}
+      <img class="face" src={faceUrl(theme(), shownCode)} alt={shownCode} draggable="false" />
+    {/if}
+    <img class="back" src={backUrl(theme())} alt="" draggable="false" />
   </span>
-{:else}
-  <span class="card back {size}"></span>
-{/if}
+</span>
 
 <style>
   .card {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.4rem;
-    height: 3.4rem;
-    border-radius: 0.35rem;
-    background: #fff;
-    color: #1a1a1a;
-    font-weight: 700;
-    font-size: 1.05rem;
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
-    line-height: 1;
+    display: inline-block;
+    width: 3rem;
+    aspect-ratio: 167 / 243;
+    perspective: 30rem;
+    flex: none;
   }
   .card.small {
-    width: 1.7rem;
-    height: 2.4rem;
-    font-size: 0.8rem;
+    width: 2.1rem;
   }
-  .red {
-    color: #c0182a;
+  .card.large {
+    width: 3.6rem;
+  }
+  .inner {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.5s ease;
+  }
+  .face-down .inner {
+    transform: rotateY(180deg);
+  }
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 6%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+    user-select: none;
   }
   .back {
-    background: repeating-linear-gradient(45deg, #1d4f91 0 4px, #2d66b3 4px 8px);
-    border: 2px solid #fff;
+    transform: rotateY(180deg);
+  }
+  .highlight img {
+    box-shadow: 0 0 0 2px #ffd23f, 0 0 0.8rem #ffd23f;
+  }
+  .highlight {
+    transform: translateY(-0.2rem);
+    transition: transform 0.3s ease;
+  }
+  .dim {
+    opacity: 0.45;
   }
 </style>

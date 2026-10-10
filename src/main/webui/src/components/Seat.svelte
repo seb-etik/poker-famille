@@ -2,7 +2,7 @@
   import Card from './Card.svelte';
   import { avatarEmoji } from '../lib/profile.js';
 
-  let { seat, isMe = false, isButton = false, handRunning = false, toAct = false, remainingMs = null, actionSeconds = 30 } = $props();
+  let { seat, isMe = false, isButton = false, handRunning = false, toAct = false, remainingMs = null, actionSeconds = 30, highlightCards = [] } = $props();
 
   const progress = $derived(remainingMs == null ? 0 : Math.min(1, remainingMs / (actionSeconds * 1000)));
 </script>
@@ -23,12 +23,14 @@
   <div class="stack">
     {#if handRunning && seat.status === 'allIn'}Tapis{:else}{seat.stack}{/if}
   </div>
-  {#if seat.cards}
+  {#if seat.cards || seat.hasCards}
     <div class="cards">
-      {#each seat.cards as code (code)}<Card {code} size="small" />{/each}
+      {#each [0, 1] as i (i)}
+        <Card code={seat.cards?.[i] ?? null} size={isMe ? 'normal' : 'small'}
+          highlight={highlightCards.includes(seat.cards?.[i])}
+          dim={highlightCards.length > 0 && !highlightCards.includes(seat.cards?.[i])} />
+      {/each}
     </div>
-  {:else if seat.hasCards}
-    <div class="cards"><Card size="small" /><Card size="small" /></div>
   {/if}
   {#if seat.bet > 0}<div class="bet">{seat.bet}</div>{/if}
   {#if !seat.connected}<div class="badge">déconnecté</div>{/if}

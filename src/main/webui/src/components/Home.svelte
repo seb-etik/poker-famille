@@ -1,6 +1,7 @@
 <script>
   import { untrack } from 'svelte';
   import { AVATARS, saveProfile } from '../lib/profile.js';
+  import { backUrl, faceUrl, THEMES } from '../lib/themes.js';
 
   let { profile = $bindable(), presetCode = '', onEnter } = $props();
 
@@ -59,6 +60,22 @@
     </div>
   </fieldset>
 
+  <fieldset>
+    <legend>Tes cartes</legend>
+    <div class="themes">
+      {#each THEMES as theme (theme.id)}
+        <button type="button" class:selected={profile.theme === theme.id} onclick={() => (profile.theme = theme.id)}>
+          <span class="preview">
+            <img src={backUrl(theme.id)} alt="" />
+            <img src={faceUrl(theme.id, 'AS')} alt="" />
+            <img src={faceUrl(theme.id, 'KH')} alt="" />
+          </span>
+          {theme.name}
+        </button>
+      {/each}
+    </div>
+  </fieldset>
+
   {#if !presetCode}
     <button class="primary" disabled={!ready || creating} onclick={createTable}>Créer une table</button>
   {/if}
@@ -110,6 +127,36 @@
   }
   .avatars button.selected {
     border-color: #ffd23f;
+  }
+  .themes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  .themes button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    background: #1d3a2b;
+    border: 2px solid transparent;
+  }
+  .themes button.selected {
+    border-color: #ffd23f;
+  }
+  .preview {
+    display: flex;
+  }
+  .preview img {
+    width: 2.6rem;
+    aspect-ratio: 167 / 243;
+    margin-left: -0.9rem;
+    border-radius: 6%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
+  }
+  .preview img:first-child {
+    margin-left: 0;
   }
   .primary {
     min-height: 3rem;

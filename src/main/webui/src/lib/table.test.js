@@ -7,6 +7,7 @@ import {
   rotateSeats,
   seatPosition,
   totalPot,
+  winningCards,
 } from './table.js';
 
 const seat = (n, extra = {}) => ({ seat: n, nickname: `J${n}`, stack: 1000, bet: 0, ...extra });
@@ -123,5 +124,24 @@ describe('describeEvent', () => {
 
   it('ignores events it has nothing to say about', () => {
     expect(describeEvent({ name: 'showdown' }, seats)).toBeNull();
+  });
+});
+
+describe('winningCards', () => {
+  it('returns the best five cards of the main pot winners', () => {
+    const lastResult = {
+      payouts: [{ amount: 450, winners: { 2: 450 } }, { amount: 500, winners: { 1: 500 } }],
+      shownHands: {
+        1: { category: 'onePair', cards: ['AH', 'AD', 'KS', '9H', '7D'] },
+        2: { category: 'threeOfAKind', cards: ['KS', 'KD', 'KC', '9H', '7D'] },
+      },
+    };
+
+    expect(winningCards({ lastResult })).toEqual(['KS', 'KD', 'KC', '9H', '7D']);
+  });
+
+  it('is empty without a showdown', () => {
+    expect(winningCards({ lastResult: { payouts: [{ amount: 15, winners: { 0: 15 } }], shownHands: {} } })).toEqual([]);
+    expect(winningCards({ lastResult: null })).toEqual([]);
   });
 });
