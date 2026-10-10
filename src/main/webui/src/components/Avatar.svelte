@@ -1,5 +1,5 @@
 <script>
-  import { avatarSrc, legacyEmoji } from '../lib/avatars.js';
+  import { avatarEmoji, avatarSrc } from '../lib/avatars.js';
 
   let { id, size = '2.8rem' } = $props();
 
@@ -9,7 +9,7 @@
 {#if src}
   <img {src} alt="" style="width: {size}; height: {size}" />
 {:else}
-  <span class="emoji" style="width: {size}; height: {size}">{legacyEmoji(id)}</span>
+  <span class="emoji" style="width: {size}; height: {size}">{avatarEmoji(id)}</span>
 {/if}
 
 <style>

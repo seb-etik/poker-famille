@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { avatarSrc, gallery, legacyEmoji } from './avatars.js';
+import { avatarEmoji, avatarKind, avatarSrc, EMOJI_AVATARS, gallery } from './avatars.js';
 
 describe('avatars', () => {
   it('draws a Lorelei avatar as an SVG data URI, the same for the same id', () => {
@@ -10,13 +10,23 @@ describe('avatars', () => {
     expect(avatarSrc('lorelei:Papa')).not.toBe(src);
   });
 
-  it('keeps the emoji avatars of the first version', () => {
+  it('shows emoji avatars as emoji', () => {
     expect(avatarSrc('fox')).toBeNull();
-    expect(legacyEmoji('fox')).toBe('🦊');
-    expect(legacyEmoji('inconnu')).toBe('🙂');
+    expect(avatarEmoji('fox')).toBe('🦊');
+    expect(avatarEmoji('inconnu')).toBe('🙂');
   });
 
-  it('offers a gallery of distinct ids that fit the protocol', () => {
+  it('tells faces from animals', () => {
+    expect(avatarKind('lorelei:Mamie')).toBe('faces');
+    expect(avatarKind('fox')).toBe('animals');
+  });
+
+  it('offers twelve animals', () => {
+    expect(EMOJI_AVATARS).toHaveLength(12);
+    expect(EMOJI_AVATARS.every((id) => avatarEmoji(id) !== '🙂')).toBe(true);
+  });
+
+  it('offers pages of distinct faces that fit the protocol', () => {
     const ids = gallery(0);
 
     expect(ids).toHaveLength(12);

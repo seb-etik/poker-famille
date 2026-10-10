@@ -1,7 +1,7 @@
 <script>
   import { untrack } from 'svelte';
   import Avatar from './Avatar.svelte';
-  import { gallery } from '../lib/avatars.js';
+  import { avatarKind, EMOJI_AVATARS, gallery } from '../lib/avatars.js';
   import { install, promptInstall } from '../lib/install.svelte.js';
   import { saveProfile } from '../lib/profile.js';
   import { backUrl, faceUrl, THEMES } from '../lib/themes.js';
@@ -11,8 +11,18 @@
   let code = $state(untrack(() => presetCode));
   let error = $state(null);
   let page = $state(0);
-  // The chosen avatar stays first, even on another page of the gallery.
-  const avatars = $derived([profile.avatar, ...gallery(page).filter((id) => id !== profile.avatar)].slice(0, 12));
+  // Opens on the tab of the current avatar.
+  let kind = $state(untrack(() => avatarKind(profile.avatar)));
+  // On the faces tab, the chosen face stays first, even on another page.
+  const avatars = $derived.by(() => {
+    if (kind === 'animals') {
+      return EMOJI_AVATARS;
+    }
+    const faces = gallery(page);
+    return avatarKind(profile.avatar) === 'faces'
+      ? [profile.avatar, ...faces.filter((id) => id !== profile.avatar)].slice(0, 12)
+      : faces;
+  });
   let creating = $state(false);
   const ready = $derived(profile.nickname.trim().length > 0 && profile.nickname.trim().length <= 20);
 
@@ -54,6 +64,12 @@
 
   <fieldset>
     <legend>Ton avatar</legend>
+    <div class="kinds" role="tablist">
+      <button type="button" role="tab" aria-selected={kind === 'faces'} class:active={kind === 'faces'}
+        onclick={() => (kind = 'faces')}>Visages</button>
+      <button type="button" role="tab" aria-selected={kind === 'animals'} class:active={kind === 'animals'}
+        onclick={() => (kind = 'animals')}>Animaux</button>
+    </div>
     <div class="avatars">
       {#each avatars as id (id)}
         <button type="button" class:selected={profile.avatar === id} onclick={() => (profile.avatar = id)} aria-label="avatar">
@@ -61,7 +77,9 @@
         </button>
       {/each}
     </div>
-    <button type="button" class="more" onclick={() => (page += 1)}>Autres têtes</button>
+    {#if kind === 'faces'}
+      <button type="button" class="more" onclick={() => (page += 1)}>Autres têtes</button>
+    {/if}
   </fieldset>
 
   <fieldset>
@@ -122,12 +140,28 @@
   legend {
     margin-bottom: 0.4rem;
   }
+  .kinds {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .kinds button {
+    flex: 1;
+    background: #10261b;
+    border: 1px solid #2b5a41;
+  }
+  .kinds button.active {
+    background: #2b5a41;
+    border-color: #ffd23f;
+  }
   .avatars {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: 0.4rem;
   }
   .avatars button {
+    display: grid;
+    place-items: center;
     aspect-ratio: 1;
     padding: 0.2rem;
     border-radius: 50%;
