@@ -1,0 +1,127 @@
+import { describe, expect, it } from 'vitest';
+import {
+  cardLabel,
+  categoryLabel,
+  describeEvent,
+  raiseShortcuts,
+  rotateSeats,
+  seatPosition,
+  totalPot,
+} from './table.js';
+
+const seat = (n, extra = {}) => ({ seat: n, nickname: `J${n}`, stack: 1000, bet: 0, ...extra });
+
+describe('rotateSeats', () => {
+  it('puts my seat first, then the others clockwise', () => {
+    const seats = [seat(0), null, seat(2), null, null, seat(5), null, null];
+
+    const rotated = rotateSeats(seats, 5);
+
+    expect(rotated.map((s) => s.number)).toEqual([5, 6, 7, 0, 1, 2, 3, 4]);
+    expect(rotated[0].seat.nickname).toBe('J5');
+    expect(rotated[1].seat).toBeNull();
+  });
+
+  it('keeps the table order for a spectator', () => {
+    const rotated = rotateSeats(Array(8).fill(null), null);
+
+    expect(rotated.map((s) => s.number)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+  });
+});
+
+describe('seatPosition', () => {
+  it('places the first position at the bottom centre', () => {
+    const { left, top } = seatPosition(0);
+
+    expect(left).toBeCloseTo(50);
+    expect(top).toBeGreaterThan(80);
+  });
+
+  it('goes clockwise: the next seat is on the bottom left', () => {
+    const { left, top } = seatPosition(1);
+
+    expect(left).toBeLessThan(50);
+    expect(top).toBeGreaterThan(50);
+  });
+
+  it('puts the opposite seat at the top', () => {
+    expect(seatPosition(4).top).toBeLessThan(20);
+  });
+});
+
+describe('totalPot', () => {
+  it('adds the pots and the bets of the round', () => {
+    const state = {
+      hand: { pots: [{ amount: 100, seats: [0, 1] }, { amount: 40, seats: [1] }] },
+      seats: [seat(0, { bet: 20 }), seat(1, { bet: 30 }), null],
+    };
+
+    expect(totalPot(state)).toBe(190);
+  });
+
+  it('is zero without a hand', () => {
+    expect(totalPot({ hand: null, seats: [] })).toBe(0);
+  });
+});
+
+describe('raiseShortcuts', () => {
+  const state = (allowed, bets, pots) => ({
+    hand: { currentBet: Math.max(...bets), pots: pots.map((amount) => ({ amount, seats: [] })) },
+    seats: bets.map((bet, n) => seat(n, { bet })),
+    allowedActions: allowed,
+  });
+
+  it('computes half pot and pot bets after the flop', () => {
+    const shortcuts = raiseShortcuts(state({ minAmount: 10, maxAmount: 990, callAmount: 0 }, [0, 0], [100]));
+
+    expect(shortcuts).toEqual({ halfPot: 50, pot: 100, allIn: 990 });
+  });
+
+  it('a pot raise first calls, then raises by the pot after the call', () => {
+    // Pot 100, opponent bet 50: call 50 makes 200, so a pot raise is to 50 + 200 = 250.
+    const shortcuts = raiseShortcuts(state({ minAmount: 100, maxAmount: 1000, callAmount: 50 }, [50, 0], [100]));
+
+    expect(shortcuts.pot).toBe(250);
+    expect(shortcuts.halfPot).toBe(150);
+  });
+
+  it('stays within the allowed range', () => {
+    const shortcuts = raiseShortcuts(state({ minAmount: 40, maxAmount: 120, callAmount: 0 }, [0, 0], [30]));
+
+    expect(shortcuts).toEqual({ halfPot: 40, pot: 40, allIn: 120 });
+  });
+});
+
+describe('cardLabel', () => {
+  it('splits a code into rank and suit symbol', () => {
+    expect(cardLabel('AS')).toEqual({ rank: 'A', suit: '♠', red: false });
+    expect(cardLabel('TD')).toEqual({ rank: '10', suit: '♦', red: true });
+    expect(cardLabel('9H')).toEqual({ rank: '9', suit: '♥', red: true });
+  });
+});
+
+describe('categoryLabel', () => {
+  it('names hands in French', () => {
+    expect(categoryLabel('threeOfAKind')).toBe('Brelan');
+    expect(categoryLabel('straightFlush')).toBe('Quinte flush');
+  });
+});
+
+describe('describeEvent', () => {
+  const seats = [seat(0, { nickname: 'Mamie' }), seat(1, { nickname: 'Papa' })];
+
+  it('describes actions', () => {
+    expect(describeEvent({ name: 'action', seat: 0, action: 'raise', amount: 30 }, seats)).toBe('Mamie relance à 30');
+    expect(describeEvent({ name: 'action', seat: 1, action: 'call', amount: 30 }, seats)).toBe('Papa suit');
+    expect(describeEvent({ name: 'action', seat: 1, action: 'fold', amount: 0 }, seats)).toBe('Papa se couche');
+  });
+
+  it('describes the board and the winners', () => {
+    expect(describeEvent({ name: 'board', stage: 'flop', cards: ['AS', 'KD', '7C'] }, seats)).toBe('Flop : A♠ K♦ 7♣');
+    expect(describeEvent({ name: 'win', payouts: [{ amount: 450, winners: { 1: 450 } }] }, seats)).toBe('Papa gagne 450');
+  });
+
+  it('ignores events it has nothing to say about', () => {
+    expect(describeEvent({ name: 'showdown' }, seats)).toBeNull();
+  });
+});
