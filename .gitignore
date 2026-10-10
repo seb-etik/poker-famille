@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Maven
+target/
+
+# Front (Quinoa / Node)
+src/main/webui/node_modules/
+src/main/webui/dist/
+src/main/webui/node/
+.quinoa/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
