@@ -1,12 +1,17 @@
 <script>
   import { untrack } from 'svelte';
-  import { AVATARS, saveProfile } from '../lib/profile.js';
+  import Avatar from './Avatar.svelte';
+  import { gallery } from '../lib/avatars.js';
+  import { saveProfile } from '../lib/profile.js';
   import { backUrl, faceUrl, THEMES } from '../lib/themes.js';
 
   let { profile = $bindable(), presetCode = '', onEnter } = $props();
 
   let code = $state(untrack(() => presetCode));
   let error = $state(null);
+  let page = $state(0);
+  // The chosen avatar stays first, even on another page of the gallery.
+  const avatars = $derived([profile.avatar, ...gallery(page).filter((id) => id !== profile.avatar)].slice(0, 12));
   let creating = $state(false);
   const ready = $derived(profile.nickname.trim().length > 0 && profile.nickname.trim().length <= 20);
 
@@ -49,15 +54,13 @@
   <fieldset>
     <legend>Ton avatar</legend>
     <div class="avatars">
-      {#each AVATARS as avatar (avatar.id)}
-        <button
-          type="button"
-          class:selected={profile.avatar === avatar.id}
-          onclick={() => (profile.avatar = avatar.id)}
-          aria-label={avatar.id}>{avatar.emoji}</button
-        >
+      {#each avatars as id (id)}
+        <button type="button" class:selected={profile.avatar === id} onclick={() => (profile.avatar = id)} aria-label="avatar">
+          <Avatar {id} size="100%" />
+        </button>
       {/each}
     </div>
+    <button type="button" class="more" onclick={() => (page += 1)}>Autres têtes</button>
   </fieldset>
 
   <fieldset>
@@ -120,13 +123,20 @@
     gap: 0.4rem;
   }
   .avatars button {
-    font-size: 1.6rem;
-    padding: 0.3rem;
+    aspect-ratio: 1;
+    padding: 0.2rem;
+    border-radius: 50%;
     background: #1d3a2b;
     border: 2px solid transparent;
   }
   .avatars button.selected {
     border-color: #ffd23f;
+  }
+  .more {
+    margin-top: 0.5rem;
+    width: 100%;
+    background: none;
+    border: 1px dashed #2b5a41;
   }
   .themes {
     display: grid;

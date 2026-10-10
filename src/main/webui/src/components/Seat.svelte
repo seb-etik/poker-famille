@@ -1,6 +1,6 @@
 <script>
   import Card from './Card.svelte';
-  import { avatarEmoji } from '../lib/profile.js';
+  import Avatar from './Avatar.svelte';
 
   let { seat, isMe = false, isButton = false, handRunning = false, toAct = false, remainingMs = null, actionSeconds = 30, highlightCards = [] } = $props();
 
@@ -16,7 +16,7 @@
   style="--progress: {progress}"
 >
   <div class="avatar">
-    {avatarEmoji(seat.avatar)}
+    <Avatar id={seat.avatar} size="100%" />
     {#if isButton}<span class="dealer">D</span>{/if}
   </div>
   <div class="name">{seat.nickname}</div>
@@ -55,7 +55,11 @@
     border-radius: 50%;
     background: #0d3b26;
     border: 3px solid #e8d8a8;
-    font-size: 1.6rem;
+    overflow: visible;
+  }
+  .avatar :global(img),
+  .avatar :global(.emoji) {
+    border-radius: 50%;
   }
   .to-act .avatar {
     border-color: transparent;

@@ -1,23 +1,5 @@
+import { gallery } from './avatars.js';
 import { readJson, writeJson } from './storage.js';
-
-export const AVATARS = [
-  { id: 'fox', emoji: '🦊' },
-  { id: 'bear', emoji: '🐻' },
-  { id: 'panda', emoji: '🐼' },
-  { id: 'frog', emoji: '🐸' },
-  { id: 'tiger', emoji: '🐯' },
-  { id: 'lion', emoji: '🦁' },
-  { id: 'monkey', emoji: '🐵' },
-  { id: 'koala', emoji: '🐨' },
-  { id: 'owl', emoji: '🦉' },
-  { id: 'cat', emoji: '🐱' },
-  { id: 'dog', emoji: '🐶' },
-  { id: 'rabbit', emoji: '🐰' },
-];
-
-export function avatarEmoji(id) {
-  return AVATARS.find((avatar) => avatar.id === id)?.emoji ?? '🙂';
-}
 
 // localStorage is shared by all the tabs of a site: "?as=name" gives a tab its own profile,
 // so that several players can be tested from one browser.
@@ -31,7 +13,7 @@ export function loadProfile() {
   const profile = {
     playerId: saved?.playerId ?? newPlayerId(),
     nickname: saved?.nickname ?? '',
-    avatar: saved?.avatar ?? AVATARS[0].id,
+    avatar: saved?.avatar ?? gallery(0)[0],
     theme: saved?.theme ?? 'classique',
   };
   saveProfile(profile);
