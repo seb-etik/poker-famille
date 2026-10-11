@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   blindOf,
-  nextBlindsText,
+  levelText,
+  nextHandDelayMs,
   cardLabel,
   categoryLabel,
   dealDelay,
@@ -180,16 +181,28 @@ describe('blindOf', () => {
   });
 });
 
-describe('nextBlindsText', () => {
-  const table = (handsUntilNextLevel) => ({ handsUntilNextLevel, nextBlinds: { smallBlind: 8, bigBlind: 16 } });
+describe('levelText', () => {
+  const table = (handsUntilNextLevel) => ({
+    blindLevel: 2,
+    handsUntilNextLevel,
+    nextBlinds: { smallBlind: 15, bigBlind: 30 },
+  });
 
-  it('counts the hands before the blinds go up', () => {
-    expect(nextBlindsText(table(3))).toBe('8 / 16 dans 3 mains');
-    expect(nextBlindsText(table(1))).toBe('8 / 16 dans 1 main');
-    expect(nextBlindsText(table(0))).toBe('8 / 16 à la prochaine main');
+  it('announces the next level and when it comes', () => {
+    expect(levelText(table(4))).toBe('Niveau 3 (15/30) dans 4 mains');
+    expect(levelText(table(1))).toBe('Niveau 3 (15/30) dans 1 main');
+    expect(levelText(table(0))).toBe('Niveau 3 (15/30) à la prochaine main');
   });
 
   it('is empty when the blinds are fixed', () => {
-    expect(nextBlindsText({ handsUntilNextLevel: null, nextBlinds: null })).toBeNull();
+    expect(levelText({ blindLevel: 1, handsUntilNextLevel: null, nextBlinds: null })).toBeNull();
+  });
+});
+
+describe('nextHandDelayMs', () => {
+  // The server's default pauses (poker.pause-after-fold / poker.pause-after-showdown).
+  it('waits longer after a showdown', () => {
+    expect(nextHandDelayMs({ shownHands: {} })).toBe(5000);
+    expect(nextHandDelayMs({ shownHands: { 1: {} } })).toBe(8000);
   });
 });

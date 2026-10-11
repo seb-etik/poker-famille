@@ -3,9 +3,10 @@
 
   /**
    * code: "AS", or null for a card seen from the back. Going from null to a code flips the card.
+   * width: in pixels (the height follows the card's ratio).
    * highlight / dim: to show the winning hand.
    */
-  let { code = null, size = 'normal', highlight = false, dim = false } = $props();
+  let { code = null, width = 46, highlight = false, dim = false } = $props();
 
   // Keeps the face once known, so that the flip shows it while turning.
   let shownCode = $state(null);
@@ -16,7 +17,7 @@
   });
 </script>
 
-<span class="card {size}" class:face-down={!code} class:highlight class:dim>
+<span class="card" class:face-down={!code} class:highlight class:dim style="width: {width}px">
   <span class="inner">
     {#if shownCode}
       <img class="face" src={faceUrl(shownCode)} alt={shownCode} draggable="false" />
@@ -28,16 +29,12 @@
 <style>
   .card {
     display: inline-block;
-    width: 2.7rem;
     aspect-ratio: 167 / 243;
     perspective: 30rem;
     flex: none;
-  }
-  .card.mini {
-    width: 1.55rem;
-  }
-  .card.large {
-    width: 3.6rem;
+    transition:
+      transform 0.3s ease,
+      opacity 0.3s ease;
   }
   .inner {
     position: relative;
@@ -64,12 +61,14 @@
   .back {
     transform: rotateY(180deg);
   }
-  .highlight img {
-    box-shadow: 0 0 0 2px #ffd23f, 0 0 0.8rem #ffd23f;
-  }
+  /* The cards of the winning hand rise with a gold outline; the others fade. */
   .highlight {
-    transform: translateY(-0.2rem);
-    transition: transform 0.3s ease;
+    transform: translateY(-8px);
+  }
+  .highlight img {
+    box-shadow:
+      0 0 0 2px #ffd23f,
+      0 0 0.8rem #ffd23f;
   }
   .dim {
     opacity: 0.45;

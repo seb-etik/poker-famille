@@ -219,6 +219,8 @@ Endpoint : `wss://<domaine>/ws/table/{code}`. Messages en JSON avec un champ `ty
 
 ## Interface
 
+**Refonte du 11 octobre 2026 : direction A « Table claire »**, choisie par la famille ; la spécification détaillée est dans `docs/UI-TABLE-A.md` et prime sur la description ci-dessous. En bref : quatre boutons fixes (Coucher, Check/Suivre, Relancer, Tapis) sous un curseur de relance, menu dans l'en-tête, centre « POT » et niveau suivant, ma place dans un bandeau, états d'attente, d'abattage (nom des mains, « Main suivante dans … s ») et de victoire redessinés.
+
 Trois écrans pour la v1 : l'accueil, la salle d'attente et la table. Le soin porté aux animations et à la personnalisation fera l'adoption.
 
 **Écran d'accueil**

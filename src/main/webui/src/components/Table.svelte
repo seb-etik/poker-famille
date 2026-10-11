@@ -2,10 +2,23 @@
   import { onDestroy, untrack } from 'svelte';
   import ActionBar from './ActionBar.svelte';
   import Card from './Card.svelte';
+  import MyPlace from './MyPlace.svelte';
   import Seat from './Seat.svelte';
   import Victory from './Victory.svelte';
+  import { callPrompt } from '../lib/actions.js';
   import { TableConnection } from '../lib/connection.svelte.js';
-  import { blindOf, categoryLabel, dealDelay, nextBlindsText, rotateSeats, seatPosition, soundFor, totalPot, winningCards } from '../lib/table.js';
+  import { handName } from '../lib/hands.js';
+  import {
+    blindOf,
+    dealDelay,
+    levelText,
+    nextHandDelayMs,
+    rotateSeats,
+    seatPosition,
+    soundFor,
+    totalPot,
+    winningCards,
+  } from '../lib/table.js';
   import { isMuted, play, setMuted } from '../lib/sounds.js';
   import { dropIn } from '../lib/transitions.js';
 
@@ -34,6 +47,54 @@
   const shareUrl = $derived(`${location.origin}/table/${code}`);
 
   let copied = $state(false);
+  let menuOpen = $state(false);
+
+  // Waiting room: before the first hand, after players left, but not after a victory (its own screen).
+  const waiting = $derived(state !== null && state.table.status === 'waiting' && state.table.winnerSeat === null);
+  // Between two hands: the result stays on the table until the next deal.
+  const showingResult = $derived(!waiting && hand?.stage === 'complete' && state.lastResult !== null);
+  const me = $derived(mySeat !== null ? state.seats[mySeat] : null);
+  const inHand = $derived(handRunning && me !== null && (me.status === 'active' || me.status === 'allIn'));
+
+  // Countdown before the next hand, from the moment the result arrived.
+  let resultAt = $state(0);
+  $effect(() => {
+    if (state?.lastResult?.handNumber) {
+      resultAt = performance.now();
+    }
+  });
+  const nextHandMs = $derived(state?.lastResult ? nextHandDelayMs(state.lastResult) : 0);
+  const nextHandLeft = $derived(Math.max(0, nextHandMs - (now - resultAt)));
+
+  /** "Seb gagne 480" and the name of his hand, for each winner of the hand. */
+  function results(result) {
+    return result.payouts
+      .flatMap((payout) => Object.entries(payout.winners))
+      .reduce((merged, [seat, amount]) => {
+        const existing = merged.find((r) => r.seat === Number(seat));
+        if (existing) {
+          existing.amount += amount;
+        } else {
+          const shown = result.shownHands[seat];
+          merged.push({
+            seat: Number(seat),
+            name: state.seats[seat]?.nickname ?? `Siège ${Number(seat) + 1}`,
+            amount,
+            hand: shown ? handName(shown.category, shown.cards) : null,
+          });
+        }
+        return merged;
+      }, []);
+  }
+
+  function myWinnings(result) {
+    return result?.payouts.reduce((sum, payout) => sum + (payout.winners[mySeat] ?? 0), 0) ?? 0;
+  }
+
+  function shownHandOf(seatNumber) {
+    const shown = state.lastResult?.shownHands[seatNumber];
+    return shown && !handRunning ? handName(shown.category, shown.cards) : null;
+  }
 
   // Board length before the last update: the cards after it are the new ones to deal.
   // Not reactive on purpose: read when the new cards are created, updated after the render.
@@ -120,30 +181,29 @@
     }
   }
 
-  function winnersText(result) {
-    return result.payouts
-      .flatMap((payout) => Object.entries(payout.winners))
-      .map(([seat, amount]) => {
-        const shown = result.shownHands[seat];
-        const name = state.seats[seat]?.nickname ?? `Siège ${Number(seat) + 1}`;
-        return `${name} gagne ${amount}${shown ? ` (${categoryLabel(shown.category)})` : ''}`;
-      })
-      .join(' · ');
-  }
 </script>
 
 <div class="screen">
   <header>
-    <button class="link" onclick={onExit}>← Accueil</button>
-    <button class="code" onclick={share}>Table {code} {copied ? '✓ lien copié' : '⤴'}</button>
-    <span class="tools">
-      <button class="link" onclick={toggleSound} aria-label={muted ? 'Activer le son' : 'Couper le son'}>
-        {muted ? '🔇' : '🔊'}
-      </button>
-      {#if mySeat !== null}
-        <button class="link" onclick={() => connection.leave()}>Se lever</button>
+    <button class="icon" onclick={onExit} aria-label="Retour à l'accueil">‹</button>
+    <div class="title">
+      <div class="code">TABLE {code}</div>
+      {#if state}
+        <div class="subtitle">
+          Blindes {state.table.smallBlind} / {state.table.bigBlind}{#if state.table.nextBlinds}{` · niveau ${state.table.blindLevel}`}{/if}
+        </div>
       {/if}
-    </span>
+    </div>
+    <button class="icon" onclick={() => (menuOpen = !menuOpen)} aria-label="Menu" aria-expanded={menuOpen}>⋯</button>
+    {#if menuOpen}
+      <div class="menu" role="menu">
+        <button role="menuitem" onclick={() => { share(); menuOpen = false; }}>{copied ? '✓ Lien copié' : 'Inviter (partager le lien)'}</button>
+        <button role="menuitem" onclick={toggleSound}>{muted ? '🔇 Son coupé' : '🔊 Son activé'}</button>
+        {#if mySeat !== null}
+          <button role="menuitem" onclick={() => { connection.leave(); menuOpen = false; }}>Se lever</button>
+        {/if}
+      </div>
+    {/if}
   </header>
 
   {#if connection.status === 'notFound'}
@@ -156,38 +216,48 @@
 
       <div class="felt">
         <div class="center">
-          {#if hand}
+          {#if waiting}
+            <div class="seated">{seatedCount} joueur{seatedCount > 1 ? 's' : ''} assis</div>
+            <div class="settings">
+              Blindes {state.table.smallBlind} / {state.table.bigBlind} · tapis {state.table.startingStack}
+            </div>
+            <div class="settings">{levelText(state.table) ?? 'Blindes fixes'}</div>
+            <button class="invite" onclick={share}>{copied ? '✓ Lien copié' : 'Inviter'}</button>
+          {:else if hand}
             <div class="board">
-              {#each hand.board as card, i (card)}
-                <span in:dropIn={{ delay: dealDelay(i, previousBoard.length) }}>
-                  <Card code={card} highlight={highlight.includes(card)} dim={highlight.length > 0 && !highlight.includes(card)} />
-                </span>
+              {#each [0, 1, 2, 3, 4] as i (i)}
+                {#if hand.board[i]}
+                  {#key hand.board[i]}
+                    <span in:dropIn={{ delay: dealDelay(i, previousBoard.length) }}>
+                      <Card
+                        width={42}
+                        code={hand.board[i]}
+                        highlight={highlight.includes(hand.board[i])}
+                        dim={highlight.length > 0 && !highlight.includes(hand.board[i])}
+                      />
+                    </span>
+                  {/key}
+                {:else}
+                  <span class="slot-empty"></span>
+                {/if}
               {/each}
             </div>
-            <div class="pot">Pot : {totalPot(state)}</div>
-          {:else}
-            <div class="pot">
-              {seatedCount < 2 ? 'Choisissez vos places' : state.you.isHost ? '' : "En attente de l'hôte…"}
-            </div>
-          {/if}
-          <div class="blinds">
-            Blindes {state.table.smallBlind} / {state.table.bigBlind}{#if state.table.nextBlinds}{` · niveau ${state.table.blindLevel}`}{/if}
-          </div>
-          {#if nextBlindsText(state.table)}
-            <div class="blinds">Ensuite {nextBlindsText(state.table)}</div>
-          {/if}
-          {#if state.lastResult}
-            <div class="result">{winnersText(state.lastResult)}</div>
-          {:else if connection.log[0]}
-            <div class="last-action">{connection.log[0]}</div>
-          {/if}
-          {#if state.table.status === 'waiting' && state.you.isHost && playersWithChips >= 2}
-            <button class="primary" onclick={() => connection.start()}>Lancer la partie</button>
+            {#if showingResult}
+              {#each results(state.lastResult) as result (result.seat)}
+                <div class="winner-line">{result.name} gagne {result.amount}</div>
+                {#if result.hand}<div class="winner-hand">{result.hand}</div>{/if}
+              {/each}
+            {:else}
+              <div class="pot-label">POT</div>
+              <div class="pot">{totalPot(state)}</div>
+              {#if levelText(state.table)}<div class="level">{levelText(state.table)}</div>{/if}
+              {#if callPrompt(state)}<div class="call-pill">{callPrompt(state)}</div>{/if}
+            {/if}
           {/if}
         </div>
       </div>
 
-      <!-- The other players around the oval; my own seat is in the strip below. -->
+      <!-- The other players around the oval; my own place is in the strip below. -->
       <div class="places">
         {#each rotateSeats(state.seats, mySeat) as place (place.number)}
           {#if place.number !== mySeat}
@@ -196,18 +266,21 @@
               {#if place.seat}
                 <Seat
                   seat={place.seat}
-                  isButton={hand?.buttonSeat === place.number}
-                  blind={blindOf(hand, place.number)}
+                  position={place.position}
+                  isButton={!waiting && hand?.buttonSeat === place.number}
+                  blind={waiting ? null : blindOf(hand, place.number)}
                   {handRunning}
                   highlightCards={highlight}
                   handNumber={hand?.number ?? 0}
-                  position={place.position}
                   winner={winnerSeats.has(place.number)}
+                  shownHand={shownHandOf(place.number)}
                   toAct={handRunning && hand.toActSeat === place.number}
                   remainingMs={hand?.toActSeat === place.number ? remainingMs : null}
                 />
               {:else if mySeat === null}
-                <button class="sit" onclick={() => connection.sit(place.number)}>S'asseoir</button>
+                <button class="free" onclick={() => connection.sit(place.number)}>+ Libre</button>
+              {:else if waiting}
+                <span class="free">Libre</span>
               {/if}
             </div>
           {/if}
@@ -221,73 +294,122 @@
       </div>
     </div>
 
-    {#if mySeat !== null && state.seats[mySeat]}
-      <div class="me">
-        <Seat
-          variant="me"
-          seat={state.seats[mySeat]}
-          isButton={hand?.buttonSeat === mySeat}
-          blind={blindOf(hand, mySeat)}
-          {handRunning}
-          highlightCards={highlight}
-          handNumber={hand?.number ?? 0}
-          winner={winnerSeats.has(mySeat)}
-          toAct={myTurn}
-          remainingMs={myTurn ? remainingMs : null}
-        />
-      </div>
+    {#if me}
+      <MyPlace
+        seat={me}
+        isButton={!waiting && hand?.buttonSeat === mySeat}
+        blind={waiting ? null : blindOf(hand, mySeat)}
+        {handRunning}
+        highlightCards={highlight}
+        handNumber={hand?.number ?? 0}
+        toAct={myTurn}
+        remainingMs={myTurn ? remainingMs : null}
+        won={showingResult ? myWinnings(state.lastResult) : 0}
+        onLeave={waiting ? () => connection.leave() : null}
+      />
     {/if}
 
+    <!-- The bottom of the screen: what I can do now. -->
     {#if state.table.winnerSeat !== null && state.seats[state.table.winnerSeat]}
-      <p class="champion">
+      <div class="bottom champion">
         🏆 {state.seats[state.table.winnerSeat].nickname} a gagné la partie
         {#if state.you.isHost}<button onclick={() => connection.restart()}>Rejouer</button>{/if}
-      </p>
+      </div>
+    {:else if waiting}
+      <div class="bottom">
+        {#if state.you.isHost}
+          <button class="start" disabled={playersWithChips < 2} onclick={() => connection.start()}>Lancer la partie</button>
+          {#if playersWithChips < 2}<p class="hint">Il faut au moins deux joueurs assis.</p>{/if}
+        {:else if mySeat === null}
+          <p class="hint">Choisis une place libre.</p>
+        {:else}
+          <p class="hint">En attente de l'hôte pour lancer la partie…</p>
+        {/if}
+      </div>
+    {:else if showingResult}
+      <div class="bottom next-hand">
+        <span>Main suivante dans {Math.ceil(nextHandLeft / 1000)} s</span>
+        <span class="progress"><span style="width: {(100 * (nextHandMs - nextHandLeft)) / nextHandMs}%"></span></span>
+      </div>
+    {:else if inHand}
+      <ActionBar
+        allowed={state.allowedActions}
+        stack={me.stack}
+        onAct={(action, amount) => connection.act(action, amount)}
+      />
     {/if}
 
     {#if victorySeat !== null && state.seats[victorySeat]}
       <Victory
         seat={state.seats[victorySeat]}
+        others={state.seats.filter((seat, n) => seat && n !== victorySeat)}
         onClose={() => (victorySeat = null)}
         onRestart={state.you.isHost ? () => connection.restart() : null}
+        {onExit}
       />
     {/if}
 
     {#if connection.error}<p class="error">{connection.error}</p>{/if}
   {/if}
-
-  {#if state?.allowedActions}
-    <ActionBar {state} onAct={(action, amount) => connection.act(action, amount)} />
-  {/if}
 </div>
 
 <style>
-  /* One screen, no scrolling: header, table (takes what is left), my strip, actions. */
+  /* One screen, no scrolling: header, table (takes what is left), my place, the bottom bar. */
   .screen {
     display: flex;
     flex-direction: column;
     height: 100dvh;
     overflow: hidden;
+    background: #0b1a12;
   }
+
   header {
+    position: relative;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: calc(0.25rem + env(safe-area-inset-top)) 0.5rem 0.25rem;
+    gap: 8px;
+    padding: calc(6px + env(safe-area-inset-top)) 8px 6px;
   }
-  .tools {
-    display: flex;
-    gap: 0.25rem;
-  }
-  .link {
+  .icon {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    font-size: 26px;
+    line-height: 1;
     background: none;
-    padding: 0.3rem;
+  }
+  .title {
+    flex: 1;
+    text-align: center;
   }
   .code {
     font-weight: 700;
-    letter-spacing: 0.1em;
-    padding: 0.4rem 0.7rem;
+    letter-spacing: 0.15em;
   }
+  .subtitle {
+    font-size: 13px;
+    opacity: 0.75;
+  }
+  .menu {
+    position: absolute;
+    top: calc(52px + env(safe-area-inset-top));
+    right: 8px;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    min-width: 220px;
+    padding: 6px;
+    border-radius: 12px;
+    background: #10261b;
+    border: 1px solid #2b5a41;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  }
+  .menu button {
+    min-height: 44px;
+    text-align: left;
+    background: none;
+  }
+
   .table {
     position: relative;
     flex: 1;
@@ -298,10 +420,10 @@
   }
   .felt {
     position: absolute;
-    inset: 2.6rem 2.4rem 1.8rem;
+    inset: 44px 34px 30px;
     border-radius: 50%;
     background: radial-gradient(#1f7a4a, #0f4a2c);
-    border: 0.5rem solid #5a3a1f;
+    border: 10px solid #5b3a20;
     display: grid;
     place-items: center;
   }
@@ -309,36 +431,70 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.35rem;
-    max-width: 90%;
+    gap: 4px;
+    max-width: 92%;
     text-align: center;
   }
   .board {
     display: flex;
-    gap: 0.2rem;
-    min-height: 3.9rem;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .slot-empty {
+    width: 42px;
+    aspect-ratio: 167 / 243;
+    border-radius: 6%;
+    border: 1.5px dashed rgb(255 255 255 / 0.3);
+    box-sizing: border-box;
+  }
+  .pot-label {
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    opacity: 0.8;
   }
   .pot {
-    font-weight: 700;
-    color: #fff;
-  }
-  .blinds {
-    font-size: 0.75rem;
-    opacity: 0.75;
-  }
-  .result {
+    font-size: 32px;
     font-weight: 700;
     color: #ffd23f;
-    font-size: 0.85rem;
+    line-height: 1;
   }
-  .last-action {
-    font-size: 0.8rem;
-    opacity: 0.85;
+  .level,
+  .settings {
+    font-size: 13px;
+    opacity: 0.7;
   }
+  .call-pill {
+    margin-top: 6px;
+    padding: 4px 12px;
+    border-radius: 14px;
+    border: 1.5px solid #ffd23f;
+    color: #ffd23f;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .winner-line {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffd23f;
+  }
+  .winner-hand {
+    font-size: 15px;
+  }
+  .seated {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .invite {
+    margin-top: 8px;
+    min-height: 44px;
+    padding: 0 24px;
+    background: #2b5a41;
+  }
+
   /* Seats sit on the rim of the felt; this box keeps the outer ones on screen. */
   .places {
     position: absolute;
-    inset: 2.3rem 2.9rem 1.4rem;
+    inset: 46px 38px 34px;
     pointer-events: none;
   }
   .place {
@@ -346,18 +502,79 @@
     transform: translate(-50%, -50%);
     pointer-events: auto;
   }
-  .me {
-    padding: 0.5rem 1rem;
-    border-top: 1px solid #2b4d3b;
-    background: #0e2218;
+  .free {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px dashed rgb(255 255 255 / 0.4);
+    background: rgb(0 0 0 / 0.25);
+    font-size: 11px;
+    color: #fff;
   }
+
+  .bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+    background: #10261b;
+    border-top: 1px solid #2b5a41;
+  }
+  .start {
+    width: 100%;
+    min-height: 56px;
+    font-size: 18px;
+    font-weight: 700;
+    background: #b8860b;
+  }
+  .hint {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+  .next-hand {
+    font-size: 15px;
+  }
+  .progress {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: rgb(255 255 255 / 0.15);
+    overflow: hidden;
+  }
+  .progress span {
+    display: block;
+    height: 100%;
+    background: #ffd23f;
+    transition: width 0.25s linear;
+  }
+  .champion {
+    flex-direction: row;
+    justify-content: center;
+    gap: 12px;
+    font-weight: 700;
+    color: #000;
+    background: #ffd23f;
+  }
+  .champion button {
+    min-height: 44px;
+    padding: 0 18px;
+    background: #0f4a2c;
+    color: #fff;
+    font-weight: 700;
+  }
+
   .flight {
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    padding: 0.15rem 0.5rem;
-    border-radius: 1rem;
+    padding: 2px 8px;
+    border-radius: 12px;
     background: #ffd23f;
     color: #000;
     font-weight: 700;
@@ -385,15 +602,7 @@
       display: none;
     }
   }
-  .sit {
-    font-size: 0.75rem;
-    padding: 0.4rem 0.6rem;
-    background: rgb(255 255 255 / 0.15);
-  }
-  .primary {
-    background: #b8860b;
-    min-height: 2.6rem;
-  }
+
   .notice {
     text-align: center;
   }
@@ -403,35 +612,20 @@
     left: 0;
     right: 0;
     margin: 0;
-    padding: 0.25rem;
+    padding: 4px;
     background: #7a5a10;
     text-align: center;
     z-index: 2;
   }
-  .champion button {
-    margin-left: 0.5rem;
-    padding: 0.25rem 0.8rem;
-    background: #0f4a2c;
-    color: #fff;
-    font-weight: 700;
-  }
-  .champion {
-    margin: 0;
-    padding: 0.4rem;
-    text-align: center;
-    font-weight: 700;
-    color: #000;
-    background: #ffd23f;
-  }
   .error {
     position: fixed;
-    top: 3rem;
-    left: 1rem;
-    right: 1rem;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
+    top: 64px;
+    left: 16px;
+    right: 16px;
+    padding: 12px;
+    border-radius: 8px;
     background: #7a2230;
     text-align: center;
-    z-index: 3;
+    z-index: 6;
   }
 </style>
