@@ -66,8 +66,8 @@ const STAGES = { flop: 'Flop', turn: 'Turn', river: 'River' };
 export function describeEvent(event, seats) {
   const name = (seat) => seats[seat]?.nickname ?? `Siège ${seat + 1}`;
   switch (event.name) {
-    case 'handStarted':
-      return `Main n° ${event.handNumber}`;
+    case 'blindsUp':
+      return `Les blindes montent : ${event.smallBlind} / ${event.bigBlind}`;
     case 'action':
       return `${name(event.seat)} ${describeAction(event)}`;
     case 'board':
@@ -132,6 +132,8 @@ export function soundFor(event) {
       return 'card';
     case 'win':
       return 'win';
+    case 'blindsUp':
+      return 'blindsUp';
     case 'action':
       return event.action === 'fold' ? 'fold' : event.action === 'check' ? 'check' : 'chips';
     default:
@@ -148,4 +150,17 @@ export function blindOf(hand, seat) {
     return 'small';
   }
   return hand.bigBlindSeat === seat ? 'big' : null;
+}
+
+/** "8 / 16 dans 3 mains": when the blinds go up next, or null when they are fixed. */
+export function nextBlindsText(table) {
+  if (!table.nextBlinds) {
+    return null;
+  }
+  const blinds = `${table.nextBlinds.smallBlind} / ${table.nextBlinds.bigBlind}`;
+  const hands = table.handsUntilNextLevel;
+  if (hands === 0) {
+    return `${blinds} à la prochaine main`;
+  }
+  return `${blinds} dans ${hands} main${hands > 1 ? 's' : ''}`;
 }

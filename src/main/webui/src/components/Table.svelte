@@ -4,7 +4,7 @@
   import Card from './Card.svelte';
   import Seat from './Seat.svelte';
   import { TableConnection } from '../lib/connection.svelte.js';
-  import { blindOf, categoryLabel, dealDelay, rotateSeats, seatPosition, soundFor, totalPot, winningCards } from '../lib/table.js';
+  import { blindOf, categoryLabel, dealDelay, nextBlindsText, rotateSeats, seatPosition, soundFor, totalPot, winningCards } from '../lib/table.js';
   import { isMuted, play, setMuted } from '../lib/sounds.js';
   import { dropIn } from '../lib/transitions.js';
 
@@ -156,7 +156,12 @@
               {seatedCount < 2 ? 'Choisissez vos places' : state.you.isHost ? '' : "En attente de l'hôte…"}
             </div>
           {/if}
-          <div class="blinds">Blindes {state.table.smallBlind} / {state.table.bigBlind}</div>
+          <div class="blinds">
+            Blindes {state.table.smallBlind} / {state.table.bigBlind}{#if state.table.nextBlinds}{` · niveau ${state.table.blindLevel}`}{/if}
+          </div>
+          {#if nextBlindsText(state.table)}
+            <div class="blinds">Ensuite {nextBlindsText(state.table)}</div>
+          {/if}
           {#if state.lastResult}
             <div class="result">{winnersText(state.lastResult)}</div>
           {:else if connection.log[0]}

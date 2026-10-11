@@ -23,6 +23,16 @@
       : faces;
   });
   let creating = $state(false);
+  // Settings of a new table, shown when the host taps "Créer une table".
+  let showSettings = $state(false);
+  const settings = $state({
+    smallBlind: 5,
+    bigBlind: 10,
+    startingStack: 1000,
+    rising: true,
+    everyHands: 10,
+    percent: 50,
+  });
   const ready = $derived(profile.nickname.trim().length > 0 && profile.nickname.trim().length <= 20);
 
   $effect(() => saveProfile(profile));
@@ -34,8 +44,18 @@
       const response = await fetch('/api/tables', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: '{}',
+        body: JSON.stringify({
+          smallBlind: settings.smallBlind,
+          bigBlind: settings.bigBlind,
+          startingStack: settings.startingStack,
+          blindIncreaseEveryHands: settings.rising ? settings.everyHands : 0,
+          blindIncreasePercent: settings.percent,
+        }),
       });
+      if (response.status === 400) {
+        error = 'Réglages impossibles : la grosse blinde doit être au moins la petite, le tapis au moins la grosse blinde, la hausse entre 10 et 200 %.';
+        return;
+      }
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -82,7 +102,31 @@
   </fieldset>
 
   {#if !presetCode}
-    <button class="primary" disabled={!ready || creating} onclick={createTable}>Créer une table</button>
+    {#if !showSettings}
+      <button class="primary" disabled={!ready} onclick={() => (showSettings = true)}>Créer une table</button>
+    {:else}
+      <fieldset class="settings">
+        <legend>Nouvelle table</legend>
+        <div class="row">
+          <label>Petite blinde <input type="number" inputmode="numeric" min="1" bind:value={settings.smallBlind} /></label>
+          <label>Grosse blinde <input type="number" inputmode="numeric" min="1" bind:value={settings.bigBlind} /></label>
+        </div>
+        <label>Tapis de départ <input type="number" inputmode="numeric" min="1" bind:value={settings.startingStack} /></label>
+        <label class="check">
+          <input type="checkbox" bind:checked={settings.rising} /> Faire monter les blindes
+        </label>
+        {#if settings.rising}
+          <div class="row">
+            <label>Mains par niveau <input type="number" inputmode="numeric" min="1" max="100" bind:value={settings.everyHands} /></label>
+            <label>Hausse (%) <input type="number" inputmode="numeric" min="10" max="200" bind:value={settings.percent} /></label>
+          </div>
+        {/if}
+        <div class="row">
+          <button type="button" onclick={() => (showSettings = false)}>Annuler</button>
+          <button type="button" class="primary" disabled={!ready || creating} onclick={createTable}>Créer la table</button>
+        </div>
+      </fieldset>
+    {/if}
   {/if}
 
   <form onsubmit={join}>
@@ -159,6 +203,34 @@
     width: 100%;
     background: none;
     border: 1px dashed #2b5a41;
+  }
+  .settings {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.75rem;
+    border: 1px solid #2b5a41;
+    border-radius: 0.5rem;
+  }
+  .settings legend {
+    padding: 0 0.3rem;
+    font-weight: 600;
+  }
+  .settings .row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .settings .row > * {
+    flex: 1;
+  }
+  .settings input[type='number'] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .settings .check {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
   }
   .primary {
     min-height: 3rem;

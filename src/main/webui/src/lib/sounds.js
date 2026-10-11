@@ -77,6 +77,11 @@ const SOUNDS = {
   },
   fold: (ctx) => noise(ctx, 0, 0.3, 700, 0.3),
   win: (ctx) => [523, 659, 784, 1047].forEach((frequency, i) => tone(ctx, frequency, i * 0.1, 0.3, 0.15, 'triangle')),
+  // Two rising bells: the blinds go up.
+  blindsUp: (ctx) => {
+    tone(ctx, 660, 0, 0.25, 0.15, 'triangle');
+    tone(ctx, 990, 0.18, 0.35, 0.15, 'triangle');
+  },
   turn: (ctx) => {
     tone(ctx, 880, 0, 0.12, 0.15);
     tone(ctx, 1320, 0.13, 0.2, 0.15);

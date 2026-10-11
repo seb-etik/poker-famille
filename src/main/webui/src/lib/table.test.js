@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   blindOf,
+  nextBlindsText,
   cardLabel,
   categoryLabel,
   dealDelay,
@@ -96,8 +97,16 @@ describe('describeEvent', () => {
     expect(describeEvent({ name: 'win', payouts: [{ amount: 450, winners: { 1: 450 } }] }, seats)).toBe('Papa gagne 450');
   });
 
+  it('announces the blinds going up', () => {
+    expect(describeEvent({ name: 'blindsUp', level: 2, smallBlind: 8, bigBlind: 16 }, seats)).toBe(
+      'Les blindes montent : 8 / 16',
+    );
+  });
+
   it('ignores events it has nothing to say about', () => {
     expect(describeEvent({ name: 'showdown' }, seats)).toBeNull();
+    // A new hand is visible on the table: the line would hide the announcement of the blinds.
+    expect(describeEvent({ name: 'handStarted', handNumber: 3, buttonSeat: 0 }, seats)).toBeNull();
   });
 });
 
@@ -144,6 +153,7 @@ describe('soundFor', () => {
     expect(soundFor({ name: 'action', action: 'check' })).toBe('check');
     expect(soundFor({ name: 'action', action: 'raise' })).toBe('chips');
     expect(soundFor({ name: 'win', payouts: [] })).toBe('win');
+    expect(soundFor({ name: 'blindsUp', level: 2, smallBlind: 8, bigBlind: 16 })).toBe('blindsUp');
   });
 
   it('stays silent for the showdown itself', () => {
@@ -162,5 +172,19 @@ describe('blindOf', () => {
 
   it('is null without a hand', () => {
     expect(blindOf(null, 1)).toBeNull();
+  });
+});
+
+describe('nextBlindsText', () => {
+  const table = (handsUntilNextLevel) => ({ handsUntilNextLevel, nextBlinds: { smallBlind: 8, bigBlind: 16 } });
+
+  it('counts the hands before the blinds go up', () => {
+    expect(nextBlindsText(table(3))).toBe('8 / 16 dans 3 mains');
+    expect(nextBlindsText(table(1))).toBe('8 / 16 dans 1 main');
+    expect(nextBlindsText(table(0))).toBe('8 / 16 à la prochaine main');
+  });
+
+  it('is empty when the blinds are fixed', () => {
+    expect(nextBlindsText({ handsUntilNextLevel: null, nextBlinds: null })).toBeNull();
   });
 });
