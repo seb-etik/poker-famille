@@ -4,7 +4,7 @@ Version du 10 octobre 2026. Source : document « Poker en famille — Plan de d�
 
 ## Objectif et périmètre de la v1
 
-Une web app (PWA) de Texas Hold'em No-Limit pour jouer en famille, à distance, sur téléphone, avec des jetons virtuels et sans argent réel. L'adoption par la famille repose sur une interface soignée : surnom, avatar, thème de cartes et joueurs visibles autour de la table.
+Une web app (PWA) de Texas Hold'em No-Limit pour jouer en famille, à distance, sur téléphone, avec des jetons virtuels et sans argent réel. L'adoption par la famille repose sur une interface soignée : surnom, avatar, beau jeu de cartes et joueurs visibles autour de la table.
 
 **Dans la v1**
 
@@ -12,13 +12,15 @@ Une web app (PWA) de Texas Hold'em No-Limit pour jouer en famille, à distance, 
 - 2 à 8 joueurs, sans compte : surnom et avatar choisis à l'arrivée
 - Texas Hold'em complet : blindes, 4 tours d'enchères, tapis et pots secondaires, abattage
 - Table ovale sur mobile, joueur courant en bas, les autres répartis autour
-- Choix du thème de cartes, propre à chaque joueur
+- Un seul jeu de cartes, le « Classique » (le choix du thème a été retiré à la demande de la famille)
+- Blindes réglables à la création de la table, avec montée automatique : +Y % toutes les X mains
+- Écran de victoire quand un joueur remporte la partie
 - Reconnexion à sa place après une coupure réseau
 
 **Hors v1**
 
 - Comptes utilisateurs, historique et statistiques
-- Tournois avec montée des blindes
+- Montée des blindes à l'horloge (en minutes) ; « rejouer » après une victoire (on crée une nouvelle table)
 - Chat, réactions emoji, upload de photos d'avatar
 - Persistance des parties après un redémarrage du serveur
 
@@ -62,7 +64,7 @@ Le projet est un seul projet Quarkus, front Svelte inclus. Le moteur de jeu vit 
 | `server` — gestion des tables | Création, codes, sièges, cycle de vie des tables | Quarkus, `@ApplicationScoped` |
 | `server` — endpoint temps réel | Connexions, messages, diffusion de l'état filtré par joueur | `quarkus-websockets-next` |
 | `server` — minuteur d'action | Temps de jeu par joueur, action automatique (check ou fold) | Vert.x timers |
-| `webui` — écran d'accueil | Surnom, avatar, thème, créer ou rejoindre | Svelte + Vite |
+| `webui` — écran d'accueil | Surnom, avatar, réglages de la table, créer ou rejoindre | Svelte + Vite |
 | `webui` — écran de table | Sièges, cartes, pot, actions, animations | Svelte, CSS, SVG |
 | `webui` — client WebSocket | Connexion, reconnexion, ping, état local | Store Svelte |
 | Assets | Thèmes de cartes SVG, avatars, sons | Fichiers statiques |
@@ -222,7 +224,7 @@ Trois écrans pour la v1 : l'accueil, la salle d'attente et la table. Le soin po
 **Écran d'accueil**
 
 - Saisie du surnom et choix de l'avatar dans une galerie (avatars générés, par exemple avec DiceBear)
-- Choix du thème de cartes avec un aperçu
+- « Créer une table » ouvre les réglages : petite et grosse blinde, tapis de départ, montée des blindes (par défaut +50 % toutes les 10 mains)
 - Boutons « Créer une table » et « Rejoindre » avec le code
 - Profil mémorisé dans `localStorage` (avec `try/catch`)
 
@@ -242,9 +244,15 @@ Trois écrans pour la v1 : l'accueil, la salle d'attente et la table. Le soin po
 
 **Thèmes de cartes**
 
-- Un thème = un dossier `themes/<nom>/` avec 52 SVG (`AS.svg`, `KH.svg`…), un `back.svg` et un `theme.json`
-- Choix purement local : le serveur ne connaît pas le thème
-- Partir d'un jeu SVG open source, puis créer des thèmes maison (dos de carte personnalisé)
+- Un seul jeu : `themes/classique/` avec 52 SVG (`AS.svg`, `KH.svg`…), un `back.svg` et un `theme.json`
+- Le choix du thème par joueur a existé puis a été retiré : la famille préfère un jeu unique ; la structure en dossiers permettrait d'en rajouter
+
+**Montée des blindes**
+
+- Recherche : en tournoi maison, +25 à 50 % par niveau (≈ 40 % en moyenne), arrondi à des valeurs rondes, tapis de départ ≈ 100 grosses blindes ; les tournois comptent en minutes, les jeux en ligne aussi en mains
+- Retenu : niveaux comptés en **mains** (indépendants de la vitesse de chacun), réglés à la création
+- À chaque niveau, la petite blinde monte du pourcentage, arrondie à une valeur ronde et toujours en hausse ; la grosse garde le rapport de départ (5/10, 8/16, 10/20, 15/30, 25/50… à +50 %)
+- Moteur : `BlindSchedule` ; la table compte ses mains ; événement `blindsUp` et niveau dans le `state`
 
 **Animations (CSS + transitions Svelte)**
 
@@ -313,7 +321,7 @@ Six itérations, chacune terminée par quelque chose qui tourne. Le moteur passe
 
 - Réactions emoji et petit chat à la table
 - Upload de photos pour les avatars (endpoint d'upload + volume persistant)
-- Mode tournoi avec montée des blindes
+- Montée des blindes à l'horloge, « rejouer » avec les mêmes joueurs après une victoire
 - Persistance des tables dans Redis pour survivre aux redéploiements
 - Historique des mains et statistiques par joueur
 - Mode « apprentissage » pour les enfants : affichage de la force de sa main
