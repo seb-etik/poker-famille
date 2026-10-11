@@ -140,7 +140,38 @@ class TableTest {
         assertTrue(table.seats().get(2).isEmpty());
     }
 
-        /** Starts a hand and folds it at once. */
+        @Test
+    void blindsGoUpWhenANewLevelStarts() {
+        Table table = new Table("ABCD", new BlindSchedule(5, 10, 2, 50));
+        table.sit(0, player("alice", 1000));
+        table.sit(1, player("bob", 1000));
+        table.sit(2, player("carol", 1000));
+        assertEquals(1, table.blindLevel());
+        assertEquals(java.util.OptionalInt.of(2), table.handsUntilNextLevel());
+
+        playQuickHand(table);
+        playQuickHand(table);
+        assertEquals(java.util.OptionalInt.of(0), table.handsUntilNextLevel());
+
+        Hand third = table.startHand(new Deck());
+
+        assertEquals(2, table.blindLevel());
+        assertEquals(new Blinds(8, 16), table.currentBlinds());
+        assertEquals(java.util.Optional.of(new Blinds(10, 20)), table.nextBlinds());
+        assertEquals(8, table.seats().get(third.smallBlindSeat()).bet());
+        assertEquals(16, table.seats().get(third.bigBlindSeat()).bet());
+    }
+
+    @Test
+    void fixedBlindsHaveNoNextLevel() {
+        Table table = tableWith(0, 1);
+
+        assertEquals(new Blinds(5, 10), table.currentBlinds());
+        assertTrue(table.nextBlinds().isEmpty());
+        assertTrue(table.handsUntilNextLevel().isEmpty());
+    }
+
+    /** Starts a hand and folds it at once. */
     private static Hand playQuickHand(Table table) {
         Hand hand = table.startHand(new Deck());
         while (!hand.isComplete()) {

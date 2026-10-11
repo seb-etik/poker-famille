@@ -3,6 +3,7 @@ package fr.famille.poker.engine;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
 /** A table: its seats, its blinds and the button, which moves from one hand to the next. */
@@ -11,28 +12,45 @@ public final class Table {
     public static final int MAX_SEATS = 8;
 
     private final String code;
-    private final int smallBlind;
-    private final int bigBlind;
+    private final BlindSchedule blinds;
     private final List<Seat> seats = IntStream.range(0, MAX_SEATS).mapToObj(Seat::new).toList();
     private Integer buttonSeat;
     private Hand currentHand;
+    private int handsDealt;
 
+    /** A table with fixed blinds. */
     public Table(String code, int smallBlind, int bigBlind) {
+        this(code, BlindSchedule.fixed(smallBlind, bigBlind));
+    }
+
+    public Table(String code, BlindSchedule blinds) {
         this.code = Objects.requireNonNull(code, "code");
-        this.smallBlind = smallBlind;
-        this.bigBlind = bigBlind;
+        this.blinds = Objects.requireNonNull(blinds, "blinds");
     }
 
     public String code() {
         return code;
     }
 
-    public int smallBlind() {
-        return smallBlind;
+    /** Level of the hand in progress or just played; 1 before the first hand. */
+    public int blindLevel() {
+        return blinds.level(handsDealt);
     }
 
-    public int bigBlind() {
-        return bigBlind;
+    public Blinds currentBlinds() {
+        return blinds.blindsAt(blindLevel());
+    }
+
+    /** Blinds of the next level; empty when the blinds are fixed. */
+    public Optional<Blinds> nextBlinds() {
+        return blinds.increases() ? Optional.of(blinds.blindsAt(blindLevel() + 1)) : Optional.empty();
+    }
+
+    /** Hands still to be dealt at the current blinds (0: the next hand goes up); empty when fixed. */
+    public OptionalInt handsUntilNextLevel() {
+        return blinds.increases()
+                ? OptionalInt.of(blindLevel() * blinds.handsPerLevel() - handsDealt)
+                : OptionalInt.empty();
     }
 
     public List<Seat> seats() {
@@ -79,7 +97,9 @@ public final class Table {
         seats.stream().filter(seat -> !dealtIn.contains(seat)).forEach(Seat::sitOut);
 
         buttonSeat = nextButton(dealtIn);
-        currentHand = Hand.start(dealtIn, buttonSeat, smallBlind, bigBlind, deck);
+        handsDealt++;
+        Blinds handBlinds = currentBlinds();
+        currentHand = Hand.start(dealtIn, buttonSeat, handBlinds.small(), handBlinds.big(), deck);
         return currentHand;
     }
 
