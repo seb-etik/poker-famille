@@ -97,6 +97,10 @@ describe('describeEvent', () => {
     expect(describeEvent({ name: 'win', payouts: [{ amount: 450, winners: { 1: 450 } }] }, seats)).toBe('Papa gagne 450');
   });
 
+  it('announces the winner of the game', () => {
+    expect(describeEvent({ name: 'gameWon', seat: 0 }, seats)).toBe('Mamie remporte la partie !');
+  });
+
   it('announces the blinds going up', () => {
     expect(describeEvent({ name: 'blindsUp', level: 2, smallBlind: 8, bigBlind: 16 }, seats)).toBe(
       'Les blindes montent : 8 / 16',
@@ -154,6 +158,7 @@ describe('soundFor', () => {
     expect(soundFor({ name: 'action', action: 'raise' })).toBe('chips');
     expect(soundFor({ name: 'win', payouts: [] })).toBe('win');
     expect(soundFor({ name: 'blindsUp', level: 2, smallBlind: 8, bigBlind: 16 })).toBe('blindsUp');
+    expect(soundFor({ name: 'gameWon', seat: 0 })).toBe('victory');
   });
 
   it('stays silent for the showdown itself', () => {

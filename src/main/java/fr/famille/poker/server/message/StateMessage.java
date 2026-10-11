@@ -17,10 +17,10 @@ public record StateMessage(
 
     /**
      * {@code smallBlind}/{@code bigBlind}: blinds of the current level. {@code handsUntilNextLevel} and
-     * {@code nextBlinds} are null when the blinds are fixed.
+     * {@code nextBlinds} are null when the blinds are fixed. {@code winnerSeat}: who won the game, once over.
      */
     public record TableView(String code, int smallBlind, int bigBlind, int startingStack, String status, Integer hostSeat,
-            int blindLevel, Integer handsUntilNextLevel, BlindsView nextBlinds) {
+            int blindLevel, Integer handsUntilNextLevel, BlindsView nextBlinds, Integer winnerSeat) {
     }
 
     public record BlindsView(int smallBlind, int bigBlind) {

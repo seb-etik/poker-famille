@@ -48,6 +48,7 @@ class GameTableTest {
 
         StateMessage forAlice = outbox.lastState("alice");
         assertTrue(forAlice.you().isHost());
+        assertNull(forAlice.table().winnerSeat());
         assertNull(forAlice.you().seat());
         assertEquals("waiting", forAlice.table().status());
         assertFalse(outbox.lastState("bob").you().isHost());
@@ -287,6 +288,11 @@ class GameTableTest {
         assertEquals("waiting", state.table().status());
         assertTrue(state.seats().stream().anyMatch(seat -> seat.stack() == 0));
         assertNull(scheduler.pendingOrNull());
+
+        int winner = state.seats().stream().filter(seat -> seat != null && seat.stack() > 0)
+                .findFirst().orElseThrow().seat();
+        assertEquals(winner, state.table().winnerSeat());
+        assertTrue(outbox.messages("bob").contains(new EventMessage.GameWon(winner)));
     }
 
     @Test

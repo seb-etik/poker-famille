@@ -68,6 +68,8 @@ export function describeEvent(event, seats) {
   switch (event.name) {
     case 'blindsUp':
       return `Les blindes montent : ${event.smallBlind} / ${event.bigBlind}`;
+    case 'gameWon':
+      return `${name(event.seat)} remporte la partie !`;
     case 'action':
       return `${name(event.seat)} ${describeAction(event)}`;
     case 'board':
@@ -134,6 +136,8 @@ export function soundFor(event) {
       return 'win';
     case 'blindsUp':
       return 'blindsUp';
+    case 'gameWon':
+      return 'victory';
     case 'action':
       return event.action === 'fold' ? 'fold' : event.action === 'check' ? 'check' : 'chips';
     default:

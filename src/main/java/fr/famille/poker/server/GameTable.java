@@ -65,6 +65,8 @@ public final class GameTable {
 
     private String hostId;
     private boolean playing;
+    /** Seat of the player who won the game (the only one left with chips), until a new game starts. */
+    private Integer winnerSeat;
     private int handNumber;
     private HandResult lastResult;
     private Scheduler.Cancellable timer;
@@ -178,6 +180,7 @@ public final class GameTable {
             throw new GameException(ErrorCode.NOT_ENOUGH_PLAYERS, "Il faut au moins deux joueurs assis.");
         }
         playing = true;
+        winnerSeat = null;
         startHand();
     }
 
@@ -271,14 +274,14 @@ public final class GameTable {
 
     private void afterChange(Hand hand, List<EventMessage> events) {
         if (hand.isComplete()) {
-            endHand(hand);
+            endHand(hand, events);
         } else {
             scheduleTurnTimer();
         }
         publish(events);
     }
 
-    private void endHand(Hand hand) {
+    private void endHand(Hand hand, List<EventMessage> events) {
         cancelTimer();
         HandResult result = hand.result().orElseThrow();
         lastResult = result;
@@ -290,11 +293,24 @@ public final class GameTable {
         }
         if (playersWithChips() < 2) {
             playing = false;
+            declareWinner(events);
             return;
         }
         Duration pause = result.shownHands().isEmpty() ? timings.pauseAfterFold() : timings.pauseAfterShowdown();
         int endedHand = handNumber;
         timer = scheduler.schedule(pause, () -> nextHand(endedHand));
+    }
+
+    /** The game is over: if one player is left with chips, they won it. */
+    private void declareWinner(List<EventMessage> events) {
+        table.seats().stream()
+                .filter(seat -> !seat.isEmpty() && seat.player().stack() > 0)
+                .map(Seat::number)
+                .findFirst()
+                .ifPresent(seat -> {
+                    winnerSeat = seat;
+                    events.add(new EventMessage.GameWon(seat));
+                });
     }
 
     private synchronized void nextHand(int endedHand) {
@@ -358,7 +374,8 @@ public final class GameTable {
         TableView tableView = new TableView(code, blinds.small(), blinds.big(), settings.startingStack(),
                 playing ? "playing" : "waiting", hostSeat, table.blindLevel(),
                 table.handsUntilNextLevel().isPresent() ? table.handsUntilNextLevel().getAsInt() : null,
-                table.nextBlinds().map(next -> new BlindsView(next.small(), next.big())).orElse(null));
+                table.nextBlinds().map(next -> new BlindsView(next.small(), next.big())).orElse(null),
+                winnerSeat);
         YouView you = new YouView(viewerSeat.map(Seat::number).orElse(null), viewer.player.id().equals(hostId));
 
         List<SeatView> seats = new ArrayList<>();

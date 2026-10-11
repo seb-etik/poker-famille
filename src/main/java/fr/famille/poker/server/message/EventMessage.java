@@ -54,6 +54,15 @@ public sealed interface EventMessage extends ServerMessage {
         }
     }
 
+    /** Only this seat has chips left: it won the game. */
+    @JsonTypeName("event")
+    record GameWon(int seat) implements EventMessage {
+        @Override
+        public String name() {
+            return "gameWon";
+        }
+    }
+
     @JsonTypeName("event")
     record Win(List<StateMessage.PayoutView> payouts) implements EventMessage {
         @Override

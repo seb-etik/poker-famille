@@ -3,6 +3,7 @@
   import ActionBar from './ActionBar.svelte';
   import Card from './Card.svelte';
   import Seat from './Seat.svelte';
+  import Victory from './Victory.svelte';
   import { TableConnection } from '../lib/connection.svelte.js';
   import { blindOf, categoryLabel, dealDelay, nextBlindsText, rotateSeats, seatPosition, soundFor, totalPot, winningCards } from '../lib/table.js';
   import { isMuted, play, setMuted } from '../lib/sounds.js';
@@ -41,6 +42,9 @@
     previousBoard.length = hand?.board.length ?? 0;
   });
 
+  // Seat of the game winner while the celebration is on screen.
+  let victorySeat = $state(null);
+
   // The pot flies to the winners once the board is fully dealt.
   let flights = $state([]);
   let streetsInBatch = 0;
@@ -48,6 +52,10 @@
     const sound = soundFor(event);
     if (sound) {
       play(sound);
+    }
+    if (event.name === 'gameWon') {
+      // Shown once the pot has flown to the winner.
+      setTimeout(() => (victorySeat = event.seat), 1500);
     }
     if (event.name === 'board') {
       streetsInBatch++;
@@ -224,6 +232,14 @@
       </div>
     {/if}
 
+    {#if state.table.winnerSeat !== null && state.seats[state.table.winnerSeat]}
+      <p class="champion">🏆 {state.seats[state.table.winnerSeat].nickname} a gagné la partie</p>
+    {/if}
+
+    {#if victorySeat !== null && state.seats[victorySeat]}
+      <Victory seat={state.seats[victorySeat]} onClose={() => (victorySeat = null)} />
+    {/if}
+
     {#if connection.error}<p class="error">{connection.error}</p>{/if}
   {/if}
 
@@ -378,6 +394,14 @@
     background: #7a5a10;
     text-align: center;
     z-index: 2;
+  }
+  .champion {
+    margin: 0;
+    padding: 0.4rem;
+    text-align: center;
+    font-weight: 700;
+    color: #000;
+    background: #ffd23f;
   }
   .error {
     position: fixed;

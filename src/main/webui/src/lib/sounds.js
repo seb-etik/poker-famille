@@ -82,6 +82,11 @@ const SOUNDS = {
     tone(ctx, 660, 0, 0.25, 0.15, 'triangle');
     tone(ctx, 990, 0.18, 0.35, 0.15, 'triangle');
   },
+  // A short fanfare: a rising arpeggio, then the final chord held.
+  victory: (ctx) => {
+    [523, 659, 784].forEach((frequency, i) => tone(ctx, frequency, i * 0.15, 0.25, 0.15, 'triangle'));
+    [523, 659, 784, 1047].forEach((frequency) => tone(ctx, frequency, 0.5, 1.2, 0.1, 'triangle'));
+  },
   turn: (ctx) => {
     tone(ctx, 880, 0, 0.12, 0.15);
     tone(ctx, 1320, 0.13, 0.2, 0.15);

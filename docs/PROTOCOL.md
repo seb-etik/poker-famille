@@ -94,7 +94,8 @@ Envoyé après `join` puis après chaque changement. Exemple pendant une main, v
     "hostSeat": 0,
     "blindLevel": 1,
     "handsUntilNextLevel": 6,
-    "nextBlinds": { "smallBlind": 8, "bigBlind": 16 }
+    "nextBlinds": { "smallBlind": 8, "bigBlind": 16 },
+    "winnerSeat": null
   },
   "you": { "seat": 2, "isHost": false },
   "seats": [
@@ -134,7 +135,9 @@ Champs :
 - `table.smallBlind` / `table.bigBlind` : blindes du niveau en cours. `table.blindLevel` : niveau, à partir
   de 1. `table.handsUntilNextLevel` : mains restant à jouer à ce niveau (0 : la prochaine main monte) ;
   `table.nextBlinds` : blindes du niveau suivant. Ces deux derniers valent `null` si les blindes sont fixes.
-- `table.hostSeat` : siège de l'hôte, `null` s'il n'est pas assis. `you.seat` : `null` si spectateur.
+- `table.hostSeat` : siège de l'hôte, `null` s'il n'est pas assis.
+- `table.winnerSeat` : siège du joueur qui a remporté la partie (seul à avoir encore des jetons), `null`
+  tant que la partie n'est pas finie ; remis à `null` quand l'hôte relance une partie. `you.seat` : `null` si spectateur.
 - `seats` : toujours 8 entrées, `null` pour un siège libre.
   - `status` : `active`, `folded`, `allIn`, `sittingOut`.
   - `bet` : mise dans le tour en cours (les tours précédents sont dans `hand.pots`).
@@ -180,6 +183,7 @@ Envoyé juste **avant** le `state` qui en résulte, pour animer la transition.
 | `board` | `stage`, `cards` (nouvelles cartes seulement) | Flop, turn ou river |
 | `showdown` | — | Les cartes sont dévoilées (voir `seats[].cards` et `lastResult`) |
 | `win` | `payouts` (même format que `lastResult`) | Les pots sont distribués |
+| `gameWon` | `seat` | Il ne reste qu'un joueur avec des jetons : il remporte la partie |
 
 Quand tous les joueurs sont à tapis, plusieurs `board` partent d'affilée : le client les anime à la suite.
 
