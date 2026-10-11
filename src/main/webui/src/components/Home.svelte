@@ -243,9 +243,14 @@
   }
   form input {
     flex: 1;
+    /* Without it, the field keeps its intrinsic width and pushes "Rejoindre" off a narrow screen. */
+    min-width: 0;
     text-transform: uppercase;
     letter-spacing: 0.3em;
     text-align: center;
+  }
+  form button {
+    flex: none;
   }
   .install {
     background: none;
