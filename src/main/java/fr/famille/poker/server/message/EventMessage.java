@@ -19,6 +19,15 @@ public sealed interface EventMessage extends ServerMessage {
         }
     }
 
+    /** The blinds go up from this hand on. */
+    @JsonTypeName("event")
+    record BlindsUp(int level, int smallBlind, int bigBlind) implements EventMessage {
+        @Override
+        public String name() {
+            return "blindsUp";
+        }
+    }
+
     /** {@code amount}: the seat's total bet for the round once the action is done. */
     @JsonTypeName("event")
     record Action(int seat, String action, int amount) implements EventMessage {

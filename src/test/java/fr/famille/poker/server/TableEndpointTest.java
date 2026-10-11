@@ -49,6 +49,32 @@ class TableEndpointTest {
     }
 
     @Test
+    void createsATableWithItsBlindSettings() {
+        String code = given().contentType("application/json")
+                .body("{\"smallBlind\": 10, \"bigBlind\": 20, \"startingStack\": 2000,"
+                        + " \"blindIncreaseEveryHands\": 5, \"blindIncreasePercent\": 25}")
+                .post("/api/tables")
+                .then().statusCode(201)
+                .extract().path("code");
+        Client client = connect(code);
+        client.send("{\"type\":\"join\",\"playerId\":\"eve-id\",\"nickname\":\"Eve\",\"avatar\":\"cat\"}");
+
+        JsonNode table = client.awaitState(s -> true).get("table");
+
+        assertEquals(10, table.get("smallBlind").asInt());
+        assertEquals(2000, table.get("startingStack").asInt());
+        assertEquals(5, table.get("handsUntilNextLevel").asInt());
+        assertEquals(15, table.at("/nextBlinds/smallBlind").asInt());
+    }
+
+    @Test
+    void refusesAnOutOfRangeBlindIncrease() {
+        given().contentType("application/json").body("{\"blindIncreaseEveryHands\": 10, \"blindIncreasePercent\": 500}")
+                .post("/api/tables")
+                .then().statusCode(400);
+    }
+
+    @Test
     void refusesInvalidTableSettings() {
         given().contentType("application/json").body("{\"smallBlind\": 20, \"bigBlind\": 10}")
                 .post("/api/tables")

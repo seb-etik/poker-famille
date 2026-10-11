@@ -34,9 +34,12 @@ class GameTableTest {
 
     private final RecordingOutbox outbox = new RecordingOutbox();
     private final ManualScheduler scheduler = new ManualScheduler();
-    private final GameTable table = new GameTable("ABCD", new TableSettings(5, 10, 1000), TIMINGS,
-            outbox, scheduler, () -> new Deck(new Random(42)),
-            Clock.fixed(Instant.parse("2026-10-10T20:00:00Z"), ZoneOffset.UTC));
+    private final GameTable table = newTable(new TableSettings(5, 10, 1000));
+
+    private GameTable newTable(TableSettings settings) {
+        return new GameTable("ABCD", settings, TIMINGS, outbox, scheduler, () -> new Deck(new Random(42)),
+                Clock.fixed(Instant.parse("2026-10-10T20:00:00Z"), ZoneOffset.UTC));
+    }
 
     @Test
     void firstPlayerToJoinIsTheHost() {
@@ -284,6 +287,49 @@ class GameTableTest {
         assertEquals("waiting", state.table().status());
         assertTrue(state.seats().stream().anyMatch(seat -> seat.stack() == 0));
         assertNull(scheduler.pendingOrNull());
+    }
+
+    @Test
+    void blindsGoUpEveryLevelAndTheRiseIsAnnounced() {
+        GameTable rising = newTable(new TableSettings(5, 10, 1000, 2, 50));
+        rising.join("alice", "Alice", "fox");
+        rising.join("bob", "Bob", "bear");
+        rising.sit("alice", 0);
+        rising.sit("bob", 1);
+        rising.start("alice");
+
+        StateMessage first = outbox.lastState("alice");
+        assertEquals(5, first.table().smallBlind());
+        assertEquals(1, first.table().blindLevel());
+        assertEquals(1, first.table().handsUntilNextLevel());
+        assertEquals(new StateMessage.BlindsView(8, 16), first.table().nextBlinds());
+
+        foldCurrentHand(rising);
+        scheduler.runPending();
+        foldCurrentHand(rising);
+        outbox.clear();
+        scheduler.runPending();
+
+        assertEquals(new EventMessage.BlindsUp(2, 8, 16), outbox.messages("bob").getFirst());
+        StateMessage third = outbox.lastState("bob");
+        assertEquals(8, third.table().smallBlind());
+        assertEquals(16, third.table().bigBlind());
+        assertEquals(2, third.table().blindLevel());
+    }
+
+    @Test
+    void fixedBlindsHaveNoNextLevel() {
+        seatAliceAndBob();
+
+        StateMessage state = outbox.lastState("alice");
+        assertEquals(1, state.table().blindLevel());
+        assertNull(state.table().handsUntilNextLevel());
+        assertNull(state.table().nextBlinds());
+    }
+
+    private void foldCurrentHand(GameTable game) {
+        String toAct = outbox.lastState("alice").hand().toActSeat() == 0 ? "alice" : "bob";
+        game.act(toAct, "fold", null);
     }
 
     private void seatAliceAndBob() {

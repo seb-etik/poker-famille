@@ -15,7 +15,10 @@ Principes, repris de `PLAN.md` :
 POST /api/tables
 Content-Type: application/json
 
-{ "smallBlind": 5, "bigBlind": 10, "startingStack": 1000 }     ← tous les champs facultatifs
+{
+  "smallBlind": 5, "bigBlind": 10, "startingStack": 1000,
+  "blindIncreaseEveryHands": 10, "blindIncreasePercent": 50
+}                                                               ← tous les champs facultatifs
 ```
 
 Réponse `201 Created` :
@@ -24,7 +27,13 @@ Réponse `201 Created` :
 { "code": "KPRV" }
 ```
 
-- Valeurs par défaut : petite blinde 5, grosse blinde 10, tapis de départ 1000.
+- Valeurs par défaut : petite blinde 5, grosse blinde 10, tapis de départ 1000, blindes en hausse de 50 %
+  toutes les 10 mains.
+- Montée des blindes : `blindIncreaseEveryHands` de 1 à 100 (0 = blindes fixes), `blindIncreasePercent`
+  de 10 à 200. À chaque niveau, la petite blinde monte du pourcentage, arrondie à une valeur ronde
+  (1 à 10, puis 15, 20, 25, 30, 40, 50, 60, 80, 100…) et toujours en hausse ; la grosse garde le rapport
+  de départ. Exemple à +50 % : 5/10, 8/16, 10/20, 15/30, 25/50, 40/80, 60/120, 100/200.
+- Réglages hors bornes : `400 Bad Request`.
 - Le code fait 4 lettres majuscules, sans `I` ni `O` (confusion avec 1 et 0).
 - Le lien à partager est `https://<domaine>/table/KPRV` (routage SPA côté front).
 - Une table sans aucun joueur connecté depuis 30 minutes est supprimée.
@@ -82,7 +91,10 @@ Envoyé après `join` puis après chaque changement. Exemple pendant une main, v
     "bigBlind": 10,
     "startingStack": 1000,
     "status": "playing",
-    "hostSeat": 0
+    "hostSeat": 0,
+    "blindLevel": 1,
+    "handsUntilNextLevel": 6,
+    "nextBlinds": { "smallBlind": 8, "bigBlind": 16 }
   },
   "you": { "seat": 2, "isHost": false },
   "seats": [
@@ -119,6 +131,9 @@ Champs :
 
 - `table.status` : `waiting` (salle d'attente) ou `playing`. Retour à `waiting` quand il reste moins de
   deux joueurs avec des jetons.
+- `table.smallBlind` / `table.bigBlind` : blindes du niveau en cours. `table.blindLevel` : niveau, à partir
+  de 1. `table.handsUntilNextLevel` : mains restant à jouer à ce niveau (0 : la prochaine main monte) ;
+  `table.nextBlinds` : blindes du niveau suivant. Ces deux derniers valent `null` si les blindes sont fixes.
 - `table.hostSeat` : siège de l'hôte, `null` s'il n'est pas assis. `you.seat` : `null` si spectateur.
 - `seats` : toujours 8 entrées, `null` pour un siège libre.
   - `status` : `active`, `folded`, `allIn`, `sittingOut`.
@@ -159,6 +174,7 @@ Envoyé juste **avant** le `state` qui en résulte, pour animer la transition.
 
 | `name` | Champs | Moment |
 | --- | --- | --- |
+| `blindsUp` | `level`, `smallBlind`, `bigBlind` | Les blindes montent, juste avant le `handStarted` de la main |
 | `handStarted` | `handNumber`, `buttonSeat` | Blindes posées et cartes distribuées |
 | `action` | `seat`, `action`, `amount` (total misé dans le tour) | Un joueur a joué (y compris action automatique) |
 | `board` | `stage`, `cards` (nouvelles cartes seulement) | Flop, turn ou river |

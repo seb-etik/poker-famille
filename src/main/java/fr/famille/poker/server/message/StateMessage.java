@@ -15,7 +15,15 @@ public record StateMessage(
         AllowedActionsView allowedActions,
         ResultView lastResult) implements ServerMessage {
 
-    public record TableView(String code, int smallBlind, int bigBlind, int startingStack, String status, Integer hostSeat) {
+    /**
+     * {@code smallBlind}/{@code bigBlind}: blinds of the current level. {@code handsUntilNextLevel} and
+     * {@code nextBlinds} are null when the blinds are fixed.
+     */
+    public record TableView(String code, int smallBlind, int bigBlind, int startingStack, String status, Integer hostSeat,
+            int blindLevel, Integer handsUntilNextLevel, BlindsView nextBlinds) {
+    }
+
+    public record BlindsView(int smallBlind, int bigBlind) {
     }
 
     public record YouView(Integer seat, boolean isHost) {

@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 import fr.famille.poker.engine.Action;
 import fr.famille.poker.engine.ActionType;
 import fr.famille.poker.engine.AllowedActions;
+import fr.famille.poker.engine.Blinds;
 import fr.famille.poker.engine.Card;
 import fr.famille.poker.engine.Deck;
 import fr.famille.poker.engine.Hand;
@@ -28,6 +29,7 @@ import fr.famille.poker.server.message.ErrorCode;
 import fr.famille.poker.server.message.EventMessage;
 import fr.famille.poker.server.message.StateMessage;
 import fr.famille.poker.server.message.StateMessage.AllowedActionsView;
+import fr.famille.poker.server.message.StateMessage.BlindsView;
 import fr.famille.poker.server.message.StateMessage.HandView;
 import fr.famille.poker.server.message.StateMessage.PayoutView;
 import fr.famille.poker.server.message.StateMessage.PotView;
@@ -90,7 +92,7 @@ public final class GameTable {
         this.scheduler = scheduler;
         this.decks = decks;
         this.clock = clock;
-        this.table = new Table(code, settings.smallBlind(), settings.bigBlind());
+        this.table = new Table(code, settings.blindSchedule());
         this.lastActivity = clock.instant();
     }
 
@@ -211,8 +213,13 @@ public final class GameTable {
         cancelTimer();
         lastResult = null;
         handNumber++;
+        int levelBefore = table.blindLevel();
         Hand hand = table.startHand(decks.get());
         List<EventMessage> events = new ArrayList<>();
+        if (table.blindLevel() > levelBefore) {
+            Blinds blinds = table.currentBlinds();
+            events.add(new EventMessage.BlindsUp(table.blindLevel(), blinds.small(), blinds.big()));
+        }
         events.add(new EventMessage.HandStarted(handNumber, hand.buttonSeat()));
         // Blinds can put everyone all in: the board may already be dealt.
         events.addAll(transitions(hand, 0));
@@ -347,8 +354,11 @@ public final class GameTable {
         Optional<Seat> viewerSeat = seatOf(viewer);
         Integer hostSeat = Optional.ofNullable(hostId).map(participants::get).flatMap(this::seatOf)
                 .map(Seat::number).orElse(null);
-        TableView tableView = new TableView(code, settings.smallBlind(), settings.bigBlind(),
-                settings.startingStack(), playing ? "playing" : "waiting", hostSeat);
+        Blinds blinds = table.currentBlinds();
+        TableView tableView = new TableView(code, blinds.small(), blinds.big(), settings.startingStack(),
+                playing ? "playing" : "waiting", hostSeat, table.blindLevel(),
+                table.handsUntilNextLevel().isPresent() ? table.handsUntilNextLevel().getAsInt() : null,
+                table.nextBlinds().map(next -> new BlindsView(next.small(), next.big())).orElse(null));
         YouView you = new YouView(viewerSeat.map(Seat::number).orElse(null), viewer.player.id().equals(hostId));
 
         List<SeatView> seats = new ArrayList<>();
