@@ -156,25 +156,16 @@ export function blindOf(hand, seat) {
   return hand.bigBlindSeat === seat ? 'big' : null;
 }
 
-/** "Niveau 3 (15/30) dans 4 mains": the next level of blinds, or null when they are fixed. */
-export function levelText(table) {
+/** In the header: "Blindes 10 / 20 · 15 / 30 dans 7 mains", or just the blinds when they are fixed. */
+export function headerBlindsText(table) {
+  const blinds = `Blindes ${table.smallBlind} / ${table.bigBlind}`;
   if (!table.nextBlinds) {
-    return null;
+    return blinds;
   }
-  const level = `Niveau ${table.blindLevel + 1} (${table.nextBlinds.smallBlind}/${table.nextBlinds.bigBlind})`;
+  const next = `${table.nextBlinds.smallBlind} / ${table.nextBlinds.bigBlind}`;
   const hands = table.handsUntilNextLevel;
   if (hands === 0) {
-    return `${level} à la prochaine main`;
+    return `${blinds} · ${next} à la prochaine main`;
   }
-  return `${level} dans ${hands} main${hands > 1 ? 's' : ''}`;
-}
-
-// The pauses between two hands are the server's defaults (poker.pause-after-fold and
-// poker.pause-after-showdown in application.properties): the state does not carry them.
-const PAUSE_AFTER_FOLD_MS = 5000;
-const PAUSE_AFTER_SHOWDOWN_MS = 8000;
-
-/** How long the server waits before dealing the next hand, after this result. */
-export function nextHandDelayMs(lastResult) {
-  return Object.keys(lastResult.shownHands).length > 0 ? PAUSE_AFTER_SHOWDOWN_MS : PAUSE_AFTER_FOLD_MS;
+  return `${blinds} · ${next} dans ${hands} main${hands > 1 ? 's' : ''}`;
 }

@@ -71,3 +71,53 @@ Animations existantes (distribution, jetons vers le pot puis vers le gagnant, re
 - Arrivée par le lien d'une table : la première lettre tapée dans le surnom fait basculer sur la table
   (`App.svelte` passe à `Table` dès que `profile.nickname` n'est plus vide). Ne basculer qu'au clic sur « Rejoindre ».
 - Accueil à 390 px : le bouton « Rejoindre » déborde à droite.
+
+## V2 : retours de la famille du 11 octobre
+
+Maquettes dans le canevas, rangée « V2 après les retours de la famille » : Retours du 11 octobre (photos iPhone),
+Placement automatique des adversaires, V2 · 3 joueurs, V2 · 5 joueurs, V2 · 8 joueurs.
+
+### Placement automatique des sièges
+
+Cause des chevauchements : `seatPosition` place chaque siège selon son numéro réel sur 8 emplacements fixes.
+À 3 joueurs, les adversaires tombent à l'est et à l'ouest, sur la ligne du pot et de la pastille « À toi ».
+
+Nouvelle règle : la position à l'écran dépend du **nombre d'adversaires**, pas du numéro de siège. On garde l'ordre
+du jeu (sens des aiguilles d'une montre en partant de ma gauche) et on remplit d'abord le haut de la table ; l'est
+et l'ouest bas (O2, E2) ne servent qu'à partir de 7 joueurs.
+
+| Adversaires | Emplacements, de ma gauche à ma droite |
+| --- | --- |
+| 1 | N |
+| 2 | NO, NE |
+| 3 | NO, N, NE |
+| 4 | O1, NO, NE, E1 |
+| 5 | O1, NO, N, NE, E1 |
+| 6 | O2, O1, NO, NE, E1, E2 |
+| 7 | O2, O1, NO, N, NE, E1, E2 |
+
+Centres d'avatar, en px dans la boîte de la table de 390 × 500 (à convertir en %) :
+N (195, 62) · NO (100, 92) · NE (290, 92) · O1 (44, 196) · E1 (346, 196) · O2 (44, 410) · E2 (346, 410).
+Les adversaires couchés gardent leur emplacement (grisés). En attente, les places libres suivent la même
+logique ; un siège qui se libère en cours de partie ne fait pas bouger les autres avant la main suivante.
+
+### Zones réservées, rien ne s'y superpose
+
+- **Bande du tableau** : de 280 à 373 px dans la boîte, toute la largeur. Aucun siège, aucune mise.
+- **Pot** : centré sous le tableau, montant seul (le texte « Niveau … dans … mains » quitte la table).
+- **Ma mise** : jeton au centre en bas de l'ovale, au-dessus de mon bandeau.
+- Mises des adversaires : jeton posé entre l'avatar et le centre, au-dessus de la bande du tableau (O2/E2 : à
+  l'intérieur, à côté du siège).
+
+### Autres corrections
+
+- **Table plus large** : l'ovale déborde de 18 px de chaque côté de l'écran (largeur 426 px pour 390, le rail
+  est coupé par les bords).
+- **Cartes du tableau plus grandes** : 64 × 93 (au lieu de 52 × 76), écart 6 px.
+- **Prochain niveau** dans l'en-tête : « Blindes 10 / 20 · 15 / 30 dans 7 mains ».
+- **Pastille « À toi »** retirée de la table : l'info va dans mon bandeau, « À toi · 20 pour suivre · 28 s ».
+- **Bouton donneur « D »** : badge sur l'avatar (en bas à droite), comme PB et GB ; jamais posé sur le feutre.
+- **Cartes cachées des adversaires** : petit éventail 18 × 26 en haut à droite de l'avatar.
+- **« Main suivante dans … » supprimé** (`Table.svelte`, vers la ligne 331) ; la main suivante démarre seule.
+- **Blindes par défaut 10 / 20** à la création d'une table (`Home.svelte` : `smallBlind: 10`, `bigBlind: 20`),
+  et côté serveur `TableSettings.DEFAULT` (`new TableSettings(10, 20, 1000, 10, 50)`) ; tapis de 1 000 inchangé.

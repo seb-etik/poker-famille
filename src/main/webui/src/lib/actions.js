@@ -38,11 +38,11 @@ export function actionButtons(allowed, stack, amount) {
   return [fold, call, raise, allIn];
 }
 
-/** The pill under the pot when it is my turn, or null. */
-export function callPrompt(state) {
-  const allowed = state.allowedActions;
+/** In my strip when it is my turn: "À toi · 20 pour suivre · 28 s", or null. */
+export function myTurnText(allowed, seconds) {
   if (!allowed) {
     return null;
   }
-  return allowed.types.includes('call') ? `À toi : ${allowed.callAmount} pour suivre` : 'À toi de parler';
+  const call = allowed.types.includes('call') ? ` · ${allowed.callAmount} pour suivre` : '';
+  return `À toi${call} · ${seconds} s`;
 }

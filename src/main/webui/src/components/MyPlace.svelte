@@ -5,6 +5,7 @@
 
   /**
    * My place, in the strip under the table: avatar with the timer ring, my two cards in large.
+   * turnText: "À toi · 20 pour suivre · 28 s" when it is my turn.
    * won: chips I won in the hand just finished, or 0. onLeave: "Se lever", shown while waiting.
    */
   let {
@@ -17,12 +18,12 @@
     actionSeconds = 30,
     highlightCards = [],
     handNumber = 0,
+    turnText = null,
     won = 0,
     onLeave = null,
   } = $props();
 
   const progress = $derived(remainingMs == null ? 0 : Math.min(1, remainingMs / (actionSeconds * 1000)));
-  const seconds = $derived(toAct && remainingMs != null ? Math.ceil(remainingMs / 1000) : null);
 </script>
 
 <div class="place" class:to-act={toAct} class:won={won > 0} class:folded={seat.status === 'folded'} style="--progress: {progress}">
@@ -38,7 +39,7 @@
       {#if handRunning && seat.status === 'allIn'}Tapis{:else}{seat.stack} jetons{/if}
       {#if won > 0}<strong class="gain">+ {won}</strong>{/if}
     </div>
-    {#if seconds !== null}<div class="seconds">{seconds} s</div>{/if}
+    {#if turnText}<div class="turn">{turnText}</div>{/if}
     {#if onLeave}<button class="leave" onclick={onLeave}>Se lever</button>{/if}
   </div>
 
@@ -148,8 +149,9 @@
     margin-left: 6px;
     color: #ffd23f;
   }
-  .seconds {
-    font-size: 13px;
+  .turn {
+    font-size: 14px;
+    font-weight: 600;
     color: #ffd23f;
   }
   .leave {
@@ -178,7 +180,7 @@
   .bet {
     position: absolute;
     left: 50%;
-    top: -14px;
+    top: -18px;
     transform: translate(-50%, -50%);
     display: flex;
     align-items: center;

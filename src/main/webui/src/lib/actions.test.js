@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { actionButtons, callPrompt } from './actions.js';
+import { actionButtons, myTurnText } from './actions.js';
 
 const allowed = (types, extra = {}) => ({ types, callAmount: 0, minAmount: 0, maxAmount: 0, ...extra });
 const byKey = (buttons) => Object.fromEntries(buttons.map((b) => [b.key, b]));
@@ -55,13 +55,13 @@ describe('actionButtons when it is not my turn', () => {
   });
 });
 
-describe('callPrompt', () => {
-  it('invites to speak, with the amount to call if any', () => {
-    expect(callPrompt({ allowedActions: allowed(['check', 'bet']) })).toBe('À toi de parler');
-    expect(callPrompt({ allowedActions: allowed(['fold', 'call', 'raise'], { callAmount: 40 }) })).toBe('À toi : 40 pour suivre');
+describe('myTurnText', () => {
+  it('tells me it is my turn, what to call and the seconds left', () => {
+    expect(myTurnText(allowed(['check', 'bet']), 28)).toBe('À toi · 28 s');
+    expect(myTurnText(allowed(['fold', 'call', 'raise'], { callAmount: 20 }), 28)).toBe('À toi · 20 pour suivre · 28 s');
   });
 
   it('says nothing when it is not my turn', () => {
-    expect(callPrompt({ allowedActions: null })).toBeNull();
+    expect(myTurnText(null, null)).toBeNull();
   });
 });

@@ -3,7 +3,7 @@
 
   /**
    * code: "AS", or null for a card seen from the back. Going from null to a code flips the card.
-   * width: in pixels (the height follows the card's ratio).
+   * width: in pixels, or any CSS length (the height follows the card's ratio).
    * highlight / dim: to show the winning hand.
    */
   let { code = null, width = 46, highlight = false, dim = false } = $props();
@@ -17,7 +17,7 @@
   });
 </script>
 
-<span class="card" class:face-down={!code} class:highlight class:dim style="width: {width}px">
+<span class="card" class:face-down={!code} class:highlight class:dim style="width: {typeof width === 'number' ? `${width}px` : width}">
   <span class="inner">
     {#if shownCode}
       <img class="face" src={faceUrl(shownCode)} alt={shownCode} draggable="false" />
