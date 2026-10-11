@@ -69,6 +69,7 @@ public class TableEndpoint {
             case ClientMessage.Sit sit -> table.sit(playerOf(connection), sit.seat());
             case ClientMessage.Leave leave -> table.leave(playerOf(connection));
             case ClientMessage.Start start -> table.start(playerOf(connection));
+            case ClientMessage.Restart restart -> table.restart(playerOf(connection));
             case ClientMessage.Act act -> table.act(playerOf(connection), act.action(), act.amount());
         }
     }

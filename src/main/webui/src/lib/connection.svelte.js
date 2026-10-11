@@ -54,6 +54,11 @@ export class TableConnection {
     this.#send({ type: 'start' });
   }
 
+  /** After a victory: a new game with the same players (host only). */
+  restart() {
+    this.#send({ type: 'restart' });
+  }
+
   act(action, amount) {
     this.#send({ type: 'action', action, amount });
   }
@@ -113,6 +118,10 @@ export class TableConnection {
         this.receivedAt = performance.now();
         break;
       case 'event': {
+        // A new game starts: the lines of the previous one are history.
+        if (message.name === 'handStarted' && message.handNumber === 1) {
+          this.log = [];
+        }
         this.#listeners.forEach((listener) => listener(message));
         const line = describeEvent(message, this.state?.seats ?? []);
         if (line) {

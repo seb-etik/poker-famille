@@ -44,6 +44,12 @@
 
   // Seat of the game winner while the celebration is on screen.
   let victorySeat = $state(null);
+  // A new game has started: the celebration is over.
+  $effect(() => {
+    if (state?.table.winnerSeat === null) {
+      victorySeat = null;
+    }
+  });
 
   // The pot flies to the winners once the board is fully dealt.
   let flights = $state([]);
@@ -233,11 +239,18 @@
     {/if}
 
     {#if state.table.winnerSeat !== null && state.seats[state.table.winnerSeat]}
-      <p class="champion">🏆 {state.seats[state.table.winnerSeat].nickname} a gagné la partie</p>
+      <p class="champion">
+        🏆 {state.seats[state.table.winnerSeat].nickname} a gagné la partie
+        {#if state.you.isHost}<button onclick={() => connection.restart()}>Rejouer</button>{/if}
+      </p>
     {/if}
 
     {#if victorySeat !== null && state.seats[victorySeat]}
-      <Victory seat={state.seats[victorySeat]} onClose={() => (victorySeat = null)} />
+      <Victory
+        seat={state.seats[victorySeat]}
+        onClose={() => (victorySeat = null)}
+        onRestart={state.you.isHost ? () => connection.restart() : null}
+      />
     {/if}
 
     {#if connection.error}<p class="error">{connection.error}</p>{/if}
@@ -394,6 +407,13 @@
     background: #7a5a10;
     text-align: center;
     z-index: 2;
+  }
+  .champion button {
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.8rem;
+    background: #0f4a2c;
+    color: #fff;
+    font-weight: 700;
   }
   .champion {
     margin: 0;

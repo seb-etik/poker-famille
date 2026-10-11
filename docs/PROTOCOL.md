@@ -62,6 +62,7 @@ Si le code n'existe pas, le serveur envoie une `error` de code `TABLE_NOT_FOUND`
 | `sit` | `seat` (0 à 7) | S'assoit sur un siège libre. Arrivée pendant une main : joue à partir de la suivante. |
 | `leave` | — | Quitte son siège. Pendant une main, le joueur se couche et le siège se libère à la fin de la main. |
 | `start` | — | Lance la partie. Réservé à l'hôte, au moins deux joueurs assis. |
+| `restart` | — | Après une victoire (`table.winnerSeat` renseigné), relance une partie avec les joueurs assis : tapis de départ pour tous, blindes au niveau 1, bouton au premier joueur. Réservé à l'hôte. |
 | `action` | `action` (`fold`, `check`, `call`, `bet`, `raise`), `amount` (pour `bet` et `raise`) | Joue son tour. |
 | `ping` | — | Garde la connexion ouverte, toutes les 25 s. Réponse : `pong`. |
 
@@ -137,7 +138,7 @@ Champs :
   `table.nextBlinds` : blindes du niveau suivant. Ces deux derniers valent `null` si les blindes sont fixes.
 - `table.hostSeat` : siège de l'hôte, `null` s'il n'est pas assis.
 - `table.winnerSeat` : siège du joueur qui a remporté la partie (seul à avoir encore des jetons), `null`
-  tant que la partie n'est pas finie ; remis à `null` quand l'hôte relance une partie. `you.seat` : `null` si spectateur.
+  tant que la partie n'est pas finie ; remis à `null` quand l'hôte relance une partie (`restart`). `you.seat` : `null` si spectateur.
 - `seats` : toujours 8 entrées, `null` pour un siège libre.
   - `status` : `active`, `folded`, `allIn`, `sittingOut`.
   - `bet` : mise dans le tour en cours (les tours précédents sont dans `hand.pots`).

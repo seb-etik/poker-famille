@@ -3,7 +3,8 @@
   import Avatar from './Avatar.svelte';
 
   /** seat: the winner's seat view (nickname, avatar, stack). */
-  let { seat, onClose } = $props();
+  /** onRestart: only for the host, who can start a new game from here. */
+  let { seat, onClose, onRestart = null } = $props();
 
   const COLORS = ['#ffd23f', '#d62839', '#2d66b3', '#1f7a4a', '#ffffff', '#ff8c42'];
   // Drawn once: each piece falls from a random spot, with its own colour, delay and speed.
@@ -33,7 +34,12 @@
     <div class="avatar"><Avatar id={seat.avatar} size="100%" /></div>
     <h2>{seat.nickname} remporte la partie !</h2>
     <p>{seat.stack} jetons</p>
-    <p class="hint">Touchez pour fermer</p>
+    {#if onRestart}
+      <button class="restart" onclick={(event) => { event.stopPropagation(); onRestart(); }}>Rejouer</button>
+    {:else}
+      <p>En attente de l'hôte pour rejouer…</p>
+    {/if}
+    <p class="hint">Touchez ailleurs pour fermer</p>
   </div>
 </div>
 
@@ -82,6 +88,14 @@
   }
   p {
     margin: 0;
+  }
+  .restart {
+    margin-top: 0.4rem;
+    min-width: 10rem;
+    min-height: 3rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: #b8860b;
   }
   .hint {
     font-size: 0.75rem;

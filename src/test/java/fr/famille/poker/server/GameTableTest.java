@@ -338,6 +338,28 @@ class GameTableTest {
         game.act(toAct, "fold", null);
     }
 
+    @Test
+    void theHostCanPlayAgainAfterAVictory() {
+        seatAliceAndBob();
+        table.start("alice");
+        assertError(ErrorCode.ILLEGAL_ACTION, () -> table.restart("alice"));
+        table.act("alice", "raise", 1000);
+        table.act("bob", "call", null);
+        assertNotNull(outbox.lastState("alice").table().winnerSeat());
+
+        assertError(ErrorCode.NOT_HOST, () -> table.restart("bob"));
+        table.restart("alice");
+
+        StateMessage state = outbox.lastState("bob");
+        assertEquals("playing", state.table().status());
+        assertNull(state.table().winnerSeat());
+        assertNull(state.lastResult());
+        assertEquals(1, state.hand().number());
+        assertEquals(1, state.table().blindLevel());
+        // Fresh stacks, minus the blinds of the first hand.
+        assertEquals(List.of(995, 990), List.of(state.seats().get(0).stack(), state.seats().get(1).stack()));
+    }
+
     private void seatAliceAndBob() {
         table.join("alice", "Alice", "fox");
         table.join("bob", "Bob", "bear");

@@ -171,6 +171,35 @@ class TableTest {
         assertTrue(table.handsUntilNextLevel().isEmpty());
     }
 
+    @Test
+    void newGameGivesEveryoneTheStartingStackAndResetsBlindsAndButton() {
+        Table table = new Table("ABCD", new BlindSchedule(5, 10, 2, 50));
+        table.sit(0, player("alice", 1000));
+        table.sit(1, player("bob", 1000));
+        table.sit(2, player("carol", 1000));
+        playQuickHand(table);
+        playQuickHand(table);
+        playQuickHand(table);
+        Player bob = table.seats().get(1).player();
+        bob.removeChips(bob.stack());
+
+        table.newGame(1500);
+
+        assertEquals(List.of(1500, 1500, 1500),
+                table.seats().stream().filter(seat -> !seat.isEmpty()).map(seat -> seat.player().stack()).toList());
+        assertEquals(1, table.blindLevel());
+        assertEquals(java.util.OptionalInt.of(2), table.handsUntilNextLevel());
+        assertEquals(0, table.startHand(new Deck()).buttonSeat());
+    }
+
+    @Test
+    void cannotStartANewGameDuringAHand() {
+        Table table = tableWith(0, 1);
+        table.startHand(new Deck());
+
+        assertThrows(IllegalStateException.class, () -> table.newGame(1000));
+    }
+
     /** Starts a hand and folds it at once. */
     private static Hand playQuickHand(Table table) {
         Hand hand = table.startHand(new Deck());

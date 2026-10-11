@@ -83,6 +83,23 @@ public final class Table {
         return seat.vacate();
     }
 
+    /** Starts over with the same players: everyone gets the starting stack, blinds and button are reset. */
+    public void newGame(int startingStack) {
+        if (currentHand != null && !currentHand.isComplete()) {
+            throw new IllegalStateException("A hand is in progress");
+        }
+        for (Seat seat : seats) {
+            if (!seat.isEmpty()) {
+                Player player = seat.player();
+                player.removeChips(player.stack());
+                player.addChips(startingStack);
+            }
+        }
+        handsDealt = 0;
+        buttonSeat = null;
+        currentHand = null;
+    }
+
     /** Deals a new hand to every seated player who has chips, the button moving one player on. */
     public Hand startHand(Deck deck) {
         if (currentHand != null && !currentHand.isComplete()) {

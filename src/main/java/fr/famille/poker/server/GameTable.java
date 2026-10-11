@@ -184,6 +184,38 @@ public final class GameTable {
         startHand();
     }
 
+    /** After a victory, the host starts a new game with the same table: fresh stacks, blinds back to level 1. */
+    public synchronized void restart(String playerId) {
+        joined(playerId);
+        if (!playerId.equals(hostId)) {
+            throw new GameException(ErrorCode.NOT_HOST, "Seul l'hôte peut relancer une partie.");
+        }
+        if (playing || winnerSeat == null) {
+            throw new GameException(ErrorCode.ILLEGAL_ACTION, "La partie n'est pas terminée.");
+        }
+        long seated = table.seats().stream().filter(seat -> !seat.isEmpty()).count();
+        if (seated < 2) {
+            throw new GameException(ErrorCode.NOT_ENOUGH_PLAYERS, "Il faut au moins deux joueurs assis.");
+        }
+        table.newGame(settings.startingStack());
+        // Players standing aside get a fresh stack too, for when they sit down again.
+        participants.replaceAll((id, participant) -> {
+            if (seatOf(participant).isPresent()) {
+                return participant;
+            }
+            Player player = participant.player;
+            Participant fresh = new Participant(
+                    new Player(player.id(), player.nickname(), player.avatar(), settings.startingStack()));
+            fresh.connected = participant.connected;
+            return fresh;
+        });
+        winnerSeat = null;
+        lastResult = null;
+        handNumber = 0;
+        playing = true;
+        startHand();
+    }
+
     public synchronized void act(String playerId, String actionName, Integer amount) {
         Participant participant = joined(playerId);
         ActionType type = ProtocolNames.actionType(actionName);

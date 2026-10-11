@@ -14,13 +14,13 @@ Une web app (PWA) de Texas Hold'em No-Limit pour jouer en famille, à distance, 
 - Table ovale sur mobile, joueur courant en bas, les autres répartis autour
 - Un seul jeu de cartes, le « Classique » (le choix du thème a été retiré à la demande de la famille)
 - Blindes réglables à la création de la table, avec montée automatique : +Y % toutes les X mains
-- Écran de victoire quand un joueur remporte la partie
+- Écran de victoire quand un joueur remporte la partie, puis « Rejouer » (hôte) : même table, mêmes joueurs, tapis et blindes remis à zéro
 - Reconnexion à sa place après une coupure réseau
 
 **Hors v1**
 
 - Comptes utilisateurs, historique et statistiques
-- Montée des blindes à l'horloge (en minutes) ; « rejouer » après une victoire (on crée une nouvelle table)
+- Montée des blindes à l'horloge (en minutes)
 - Chat, réactions emoji, upload de photos d'avatar
 - Persistance des parties après un redémarrage du serveur
 
@@ -321,7 +321,7 @@ Six itérations, chacune terminée par quelque chose qui tourne. Le moteur passe
 
 - Réactions emoji et petit chat à la table
 - Upload de photos pour les avatars (endpoint d'upload + volume persistant)
-- Montée des blindes à l'horloge, « rejouer » avec les mêmes joueurs après une victoire
+- Montée des blindes à l'horloge
 - Persistance des tables dans Redis pour survivre aux redéploiements
 - Historique des mains et statistiques par joueur
 - Mode « apprentissage » pour les enfants : affichage de la force de sa main
