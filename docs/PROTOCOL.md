@@ -16,7 +16,7 @@ POST /api/tables
 Content-Type: application/json
 
 {
-  "smallBlind": 5, "bigBlind": 10, "startingStack": 1000,
+  "smallBlind": 10, "bigBlind": 20, "startingStack": 1000,
   "blindIncreaseEveryHands": 10, "blindIncreasePercent": 50
 }                                                               ← tous les champs facultatifs
 ```
@@ -27,7 +27,7 @@ Réponse `201 Created` :
 { "code": "KPRV" }
 ```
 
-- Valeurs par défaut : petite blinde 5, grosse blinde 10, tapis de départ 1000, blindes en hausse de 50 %
+- Valeurs par défaut : petite blinde 10, grosse blinde 20, tapis de départ 1000, blindes en hausse de 50 %
   toutes les 10 mains.
 - Montée des blindes : `blindIncreaseEveryHands` de 1 à 100 (0 = blindes fixes), `blindIncreasePercent`
   de 10 à 200. À chaque niveau, la petite blinde monte du pourcentage, arrondie à une valeur ronde

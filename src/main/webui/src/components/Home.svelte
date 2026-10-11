@@ -26,8 +26,8 @@
   // Settings of a new table, shown when the host taps "Créer une table".
   let showSettings = $state(false);
   const settings = $state({
-    smallBlind: 5,
-    bigBlind: 10,
+    smallBlind: 10,
+    bigBlind: 20,
     startingStack: 1000,
     rising: true,
     everyHands: 10,
