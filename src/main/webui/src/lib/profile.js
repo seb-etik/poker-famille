@@ -14,7 +14,6 @@ export function loadProfile() {
     playerId: saved?.playerId ?? newPlayerId(),
     nickname: saved?.nickname ?? '',
     avatar: saved?.avatar ?? gallery(0)[0],
-    theme: saved?.theme ?? 'classique',
   };
   saveProfile(profile);
   return profile;
@@ -25,7 +24,6 @@ export function saveProfile(profile) {
     playerId: profile.playerId,
     nickname: profile.nickname,
     avatar: profile.avatar,
-    theme: profile.theme,
   });
 }
 

@@ -1,5 +1,4 @@
 <script>
-  import { getContext } from 'svelte';
   import { backUrl, faceUrl } from '../lib/themes.js';
 
   /**
@@ -8,7 +7,6 @@
    */
   let { code = null, size = 'normal', highlight = false, dim = false } = $props();
 
-  const theme = getContext('theme');
   // Keeps the face once known, so that the flip shows it while turning.
   let shownCode = $state(null);
   $effect.pre(() => {
@@ -21,9 +19,9 @@
 <span class="card {size}" class:face-down={!code} class:highlight class:dim>
   <span class="inner">
     {#if shownCode}
-      <img class="face" src={faceUrl(theme(), shownCode)} alt={shownCode} draggable="false" />
+      <img class="face" src={faceUrl(shownCode)} alt={shownCode} draggable="false" />
     {/if}
-    <img class="back" src={backUrl(theme())} alt="" draggable="false" />
+    <img class="back" src={backUrl()} alt="" draggable="false" />
   </span>
 </span>
 
