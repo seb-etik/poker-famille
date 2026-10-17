@@ -38,6 +38,20 @@ Réponse `201 Created` :
 - Le lien à partager est `https://<domaine>/table/KPRV` (routage SPA côté front).
 - Une table sans aucun joueur connecté depuis 30 minutes est supprimée.
 
+## 1 bis. Classement de la famille (HTTP)
+
+```
+GET /api/leaderboard?period=month      ← mois civil en cours, heure de Paris (par défaut)
+GET /api/leaderboard?period=all        ← depuis le démarrage du serveur
+```
+
+Réponse `200` : `[{ "nickname": "Mamie", "avatar": "fox", "wins": 5, "games": 14, "rank": 2 }, …]`, triée par
+victoires, puis pourcentage de victoires, puis nombre de parties ; les joueurs à égalité sur les trois partagent
+leur rang. Un joueur est son surnom, comparé sans majuscules, accents ni espaces autour ; surnom et avatar
+affichés sont ceux de sa dernière partie. Une victoire est une partie gagnée jusqu'au bout (tous les autres joueurs
+ont fini sans jetons). L'historique est **en mémoire** : il repart à zéro à chaque redémarrage du serveur.
+Période inconnue : `400`.
+
 ## 2. WebSocket
 
 Endpoint : `wss://<domaine>/ws/table/{code}`. Tous les messages sont des objets JSON avec un champ `type`.
@@ -184,7 +198,7 @@ Envoyé juste **avant** le `state` qui en résulte, pour animer la transition.
 | `board` | `stage`, `cards` (nouvelles cartes seulement) | Flop, turn ou river |
 | `showdown` | — | Les cartes sont dévoilées (voir `seats[].cards` et `lastResult`) |
 | `win` | `payouts` (même format que `lastResult`) | Les pots sont distribués |
-| `gameWon` | `seat` | Il ne reste qu'un joueur avec des jetons : il remporte la partie |
+| `gameWon` | `seat`, `wins`, `rank`, `top` | Il ne reste qu'un joueur avec des jetons : il remporte la partie. `wins` et `rank` : ses victoires et son rang du mois après cette partie ; `top` : les 3 premiers du mois (format de `/api/leaderboard`). Les trois valent `null` si la partie ne compte pas (adversaires partis avec leurs jetons). |
 
 Quand tous les joueurs sont à tapis, plusieurs `board` partent d'affilée : le client les anime à la suite.
 

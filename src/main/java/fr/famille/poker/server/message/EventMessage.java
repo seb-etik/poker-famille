@@ -5,6 +5,8 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
+import fr.famille.poker.server.LeaderboardEntry;
+
 /** Something to animate, sent just before the state it leads to. */
 public sealed interface EventMessage extends ServerMessage {
 
@@ -54,9 +56,12 @@ public sealed interface EventMessage extends ServerMessage {
         }
     }
 
-    /** Only this seat has chips left: it won the game. */
+    /**
+     * Only this seat has chips left: it won the game. When the game counts for the leaderboard: the winner's
+     * wins and rank this month, and the top 3 of the month; null otherwise (opponents left with their chips).
+     */
     @JsonTypeName("event")
-    record GameWon(int seat) implements EventMessage {
+    record GameWon(int seat, Integer wins, Integer rank, List<LeaderboardEntry> top) implements EventMessage {
         @Override
         public String name() {
             return "gameWon";

@@ -75,6 +75,13 @@ class TableEndpointTest {
     }
 
     @Test
+    void servesTheLeaderboardOfTheMonthOrOfAllTime() {
+        given().get("/api/leaderboard").then().statusCode(200).contentType("application/json");
+        given().get("/api/leaderboard?period=all").then().statusCode(200);
+        given().get("/api/leaderboard?period=year").then().statusCode(400);
+    }
+
+    @Test
     void refusesInvalidTableSettings() {
         given().contentType("application/json").body("{\"smallBlind\": 20, \"bigBlind\": 10}")
                 .post("/api/tables")

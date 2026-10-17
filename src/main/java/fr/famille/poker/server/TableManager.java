@@ -33,6 +33,9 @@ public class TableManager {
     @Inject
     ConnectionRegistry connections;
 
+    @Inject
+    ResultStore results;
+
     void onStart(@Observes StartupEvent event) {
         vertx.setPeriodic(PURGE_PERIOD_MS, ignored -> purgeAbandonedTables());
     }
@@ -44,7 +47,7 @@ public class TableManager {
             String code = codes.next();
             GameTable table = new GameTable(code, settings, timings,
                     (playerId, message) -> connections.send(code, playerId, message),
-                    new VertxScheduler(vertx), Deck::new, Clock.systemUTC());
+                    new VertxScheduler(vertx), Deck::new, Clock.systemUTC(), results);
             if (tables.putIfAbsent(code, table) == null) {
                 Log.infof("Table %s created", code);
                 return table;

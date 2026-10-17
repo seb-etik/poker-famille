@@ -67,6 +67,9 @@ public final class GameTable {
     private boolean playing;
     /** Seat of the player who won the game (the only one left with chips), until a new game starts. */
     private Integer winnerSeat;
+    /** Everyone dealt in at least one hand of the current game, by player id: for the leaderboard. */
+    private final Map<String, Player> gamePlayers = new LinkedHashMap<>();
+    private final ResultBook results;
     private int handNumber;
     private HandResult lastResult;
     private Scheduler.Cancellable timer;
@@ -86,7 +89,7 @@ public final class GameTable {
     }
 
     public GameTable(String code, TableSettings settings, Timings timings, Outbox outbox, Scheduler scheduler,
-            Supplier<Deck> decks, Clock clock) {
+            Supplier<Deck> decks, Clock clock, ResultBook results) {
         this.code = code;
         this.settings = settings;
         this.timings = timings;
@@ -94,6 +97,7 @@ public final class GameTable {
         this.scheduler = scheduler;
         this.decks = decks;
         this.clock = clock;
+        this.results = results;
         this.table = new Table(code, settings.blindSchedule());
         this.lastActivity = clock.instant();
     }
@@ -181,6 +185,7 @@ public final class GameTable {
         }
         playing = true;
         winnerSeat = null;
+        gamePlayers.clear();
         startHand();
     }
 
@@ -210,6 +215,7 @@ public final class GameTable {
             return fresh;
         });
         winnerSeat = null;
+        gamePlayers.clear();
         lastResult = null;
         handNumber = 0;
         playing = true;
@@ -250,6 +256,7 @@ public final class GameTable {
         handNumber++;
         int levelBefore = table.blindLevel();
         Hand hand = table.startHand(decks.get());
+        hand.seats().forEach(seat -> gamePlayers.putIfAbsent(seat.player().id(), seat.player()));
         List<EventMessage> events = new ArrayList<>();
         if (table.blindLevel() > levelBefore) {
             Blinds blinds = table.currentBlinds();
@@ -333,16 +340,34 @@ public final class GameTable {
         timer = scheduler.schedule(pause, () -> nextHand(endedHand));
     }
 
-    /** The game is over: if one player is left with chips, they won it. */
+    /**
+     * The game is over: if one player is left with chips, they won it. It counts for the leaderboard only if
+     * every other player of the game ended without chips: a game whose opponents left with theirs was abandoned.
+     */
     private void declareWinner(List<EventMessage> events) {
         table.seats().stream()
                 .filter(seat -> !seat.isEmpty() && seat.player().stack() > 0)
-                .map(Seat::number)
                 .findFirst()
                 .ifPresent(seat -> {
-                    winnerSeat = seat;
-                    events.add(new EventMessage.GameWon(seat));
+                    winnerSeat = seat.number();
+                    Player winner = seat.player();
+                    boolean wonToTheEnd = gamePlayers.keySet().stream()
+                            .filter(id -> !id.equals(winner.id()))
+                            .allMatch(id -> participants.get(id).player.stack() == 0);
+                    Standing standing = wonToTheEnd && gamePlayers.size() >= 2
+                            ? results.recordWin(gameRecord(winner))
+                            : null;
+                    events.add(standing == null
+                            ? new EventMessage.GameWon(seat.number(), null, null, null)
+                            : new EventMessage.GameWon(seat.number(), standing.wins(), standing.rank(), standing.top()));
                 });
+    }
+
+    private GameRecord gameRecord(Player winner) {
+        Map<String, String> avatars = new LinkedHashMap<>();
+        gamePlayers.values().forEach(player -> avatars.put(player.nickname(), player.avatar()));
+        return new GameRecord(clock.instant(), gamePlayers.values().stream().map(Player::nickname).toList(),
+                winner.nickname(), avatars);
     }
 
     private synchronized void nextHand(int endedHand) {

@@ -34,11 +34,18 @@ class GameTableTest {
 
     private final RecordingOutbox outbox = new RecordingOutbox();
     private final ManualScheduler scheduler = new ManualScheduler();
+    /** Games won to the end; each one is said to put its winner first of the month with as many wins. */
+    private final List<GameRecord> recorded = new ArrayList<>();
+    private final ResultBook results = game -> {
+        recorded.add(game);
+        LeaderboardEntry entry = new LeaderboardEntry(game.winner(), "fox", recorded.size(), recorded.size(), 1);
+        return new Standing(recorded.size(), 1, List.of(entry));
+    };
     private final GameTable table = newTable(new TableSettings(5, 10, 1000));
 
     private GameTable newTable(TableSettings settings) {
         return new GameTable("ABCD", settings, TIMINGS, outbox, scheduler, () -> new Deck(new Random(42)),
-                Clock.fixed(Instant.parse("2026-10-10T20:00:00Z"), ZoneOffset.UTC));
+                Clock.fixed(Instant.parse("2026-10-10T20:00:00Z"), ZoneOffset.UTC), results);
     }
 
     @Test
@@ -292,7 +299,46 @@ class GameTableTest {
         int winner = state.seats().stream().filter(seat -> seat != null && seat.stack() > 0)
                 .findFirst().orElseThrow().seat();
         assertEquals(winner, state.table().winnerSeat());
-        assertTrue(outbox.messages("bob").contains(new EventMessage.GameWon(winner)));
+
+        // The game counts for the leaderboard, and the victory screen gets the winner's standing.
+        String winnerName = winner == 0 ? "Alice" : "Bob";
+        assertEquals(1, recorded.size());
+        assertEquals(List.of("Alice", "Bob"), recorded.getFirst().players());
+        assertEquals(winnerName, recorded.getFirst().winner());
+        assertEquals(Map.of("Alice", "fox", "Bob", "bear"), recorded.getFirst().avatars());
+        EventMessage.GameWon won = outbox.messages("bob").stream()
+                .filter(EventMessage.GameWon.class::isInstance).map(EventMessage.GameWon.class::cast)
+                .findFirst().orElseThrow();
+        assertEquals(winner, won.seat());
+        assertEquals(1, won.wins());
+        assertEquals(1, won.rank());
+        assertEquals(winnerName, won.top().getFirst().nickname());
+    }
+
+    @Test
+    void aGameWhoseOpponentsLeftWithChipsDoesNotCount() {
+        seatAliceAndBob();
+        table.start("alice");
+
+        table.leave("bob");
+        table.act("alice", "fold", null);
+
+        assertEquals(0, outbox.lastState("alice").table().winnerSeat());
+        assertTrue(recorded.isEmpty(), "Bob left with his chips: the game was abandoned, not won");
+    }
+
+    @Test
+    void playingAgainIsANewGame() {
+        seatAliceAndBob();
+        table.start("alice");
+        table.act("alice", "raise", 1000);
+        table.act("bob", "call", null);
+
+        table.restart("alice");
+        table.act("alice", "raise", 1000);
+        table.act("bob", "call", null);
+
+        assertEquals(2, recorded.size());
     }
 
     @Test
