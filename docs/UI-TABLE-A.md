@@ -370,6 +370,7 @@ Demandes de la famille ; aucun écran nouveau.
   de lire les cartes et les étiquettes de la V6. La pause après un coucher (`pauseAfterFold`, 5 s) ne change pas.
 - Vérifier qu'aucun `poker.pause-after-showdown` dans `application.properties` ou dans `k8s/` ne la surcharge
   (les tests peuvent garder leurs délais courts).
+- Ramenée à **10 s** le 17 octobre, à la demande de la famille : 12 s, c'était trop long.
 
 ### Montée des blindes par défaut : toutes les 5 mains, +100 %
 

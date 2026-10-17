@@ -236,7 +236,7 @@ Réponse à `ping`, sans autre champ.
 - **Tapis** : un joueur qui s'assoit reçoit le tapis de départ. S'il se lève puis se rassoit, il retrouve
   son tapis précédent (le serveur le garde par `playerId`) : se relever ne recharge pas les jetons.
 - **Enchaînement** : après `start`, les mains s'enchaînent seules. Pause de 5 s après une main gagnée sans
-  abattage, 12 s après un abattage, pour laisser le temps de lire les cartes montrées.
+  abattage, 10 s après un abattage, pour laisser le temps de lire les cartes montrées.
 - **Minuteur** : 30 s pour agir. À l'expiration, le serveur joue `check` si c'est possible, sinon `fold`.
 - **Déconnexion** : le joueur garde son siège et son tapis, `connected` passe à `false`. À son tour, le
   serveur joue tout de suite pour lui (`check` sinon `fold`) au lieu d'attendre 30 s.
