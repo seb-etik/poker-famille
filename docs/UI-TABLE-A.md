@@ -22,8 +22,9 @@ Front uniquement : aucun changement de serveur ni de protocole n'est nécessaire
 
 - Grille de 4 colonnes égales, boutons de 62 px de haut ; le montant s'affiche sur une 2e ligne (14 px) sous le
   libellé (16 px gras).
-- Ligne du curseur (44 px) : « Relance », le curseur, la valeur. Affichée seulement si relancer est possible et
-  `maxAmount > minAmount`.
+- Curseur (révisé le 17 octobre, voir la fin du document) : toucher « Relancer » remplace la rangée de boutons par
+  « ✕ · curseur · Relancer + montant » ; le second toucher envoie la relance. Seulement si relancer est possible et
+  `maxAmount > minAmount` ; sinon « Relancer » envoie directement le seul montant possible.
 - Correspondance avec `allowedActions` :
   - Coucher : `fold`.
   - 2e bouton : `check` si permis, sinon `call` avec `callAmount`.
@@ -379,3 +380,16 @@ Demandes de la famille ; aucun écran nouveau.
   160 n'est pas une valeur ronde, `BlindSchedule` arrondit à 150), 300/600… Vérifié par `TableSettingsTest`.
 - Mettre à jour les tests qui s'appuient sur l'ancien défaut, et `docs/PLAN.md` (section Interface : « par défaut
   +100 % toutes les 5 mains »).
+
+## Correctif : la table ne rétrécit plus à mon tour (17 octobre)
+
+Constat : la ligne du curseur (44 px + 8 px d'écart) apparaissait au-dessus des boutons à chacun de mes tours. La
+barre passait de 81 à 133 px, la table perdait 52 px de haut et, comme la taille des cartes du tableau et des sièges
+suit cette hauteur (V3), tout rétrécissait puis regrandissait : sur Safari (iPhone 13), cartes du tableau 66 × 96 →
+57 × 83 et sièges à 70 % ; sur Chrome, 82 × 119 → 73 × 107.
+
+Choix de la famille : le curseur s'ouvre au toucher de « Relancer », **à la place** de la rangée de boutons
+(même hauteur, 62 px) : « ✕ » (annule), le curseur, puis « Relancer + montant » qui envoie la relance. Deux touchers
+pour relancer au lieu d'un ; la barre garde toujours 81 px et la table ne change plus de taille. Le curseur se
+referme à chaque nouveau tour. Logique dans `opensSlider` (`lib/actions.js`).
+

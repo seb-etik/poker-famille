@@ -46,3 +46,15 @@ export function myTurnText(allowed, seconds) {
   const call = allowed.types.includes('call') ? ` · ${allowed.callAmount} pour suivre` : '';
   return `À toi${call} · ${seconds} s`;
 }
+
+/**
+ * Whether "Relancer" opens the slider (a range of amounts to choose from) rather than raising at once.
+ * The slider takes the place of the buttons, so that the bar, and the table above it, never change height.
+ */
+export function opensSlider(allowed) {
+  if (!allowed) {
+    return false;
+  }
+  const canRaise = allowed.types.includes('bet') || allowed.types.includes('raise');
+  return canRaise && allowed.maxAmount > allowed.minAmount;
+}

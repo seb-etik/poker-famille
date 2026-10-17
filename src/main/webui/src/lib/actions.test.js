@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { actionButtons, myTurnText } from './actions.js';
+import { actionButtons, myTurnText, opensSlider } from './actions.js';
 
 const allowed = (types, extra = {}) => ({ types, callAmount: 0, minAmount: 0, maxAmount: 0, ...extra });
 const byKey = (buttons) => Object.fromEntries(buttons.map((b) => [b.key, b]));
@@ -63,5 +63,18 @@ describe('myTurnText', () => {
 
   it('says nothing when it is not my turn', () => {
     expect(myTurnText(null, null)).toBeNull();
+  });
+});
+
+describe('opensSlider', () => {
+  it('opens the slider when there is a range of amounts to choose from', () => {
+    expect(opensSlider({ types: ['fold', 'call', 'raise'], callAmount: 20, minAmount: 40, maxAmount: 1000 })).toBe(true);
+    expect(opensSlider({ types: ['check', 'bet'], callAmount: 0, minAmount: 20, maxAmount: 500 })).toBe(true);
+  });
+
+  it('raises at once when only one amount is possible, or not at all when raising is not allowed', () => {
+    expect(opensSlider({ types: ['fold', 'call', 'raise'], callAmount: 20, minAmount: 60, maxAmount: 60 })).toBe(false);
+    expect(opensSlider({ types: ['fold', 'call'], callAmount: 20, minAmount: 0, maxAmount: 0 })).toBe(false);
+    expect(opensSlider(null)).toBe(false);
   });
 });
