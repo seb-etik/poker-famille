@@ -10,7 +10,7 @@ import fr.famille.poker.engine.BlindSchedule;
  */
 public record TableSettings(int smallBlind, int bigBlind, int startingStack, int handsPerLevel, int increasePercent) {
 
-    public static final TableSettings DEFAULT = new TableSettings(10, 20, 1000, 10, 50);
+    public static final TableSettings DEFAULT = new TableSettings(10, 20, 1000, 5, 100);
 
     public TableSettings {
         if (smallBlind <= 0 || bigBlind < smallBlind || startingStack < bigBlind) {

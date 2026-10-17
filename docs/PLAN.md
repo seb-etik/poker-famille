@@ -227,7 +227,7 @@ Trois écrans pour la v1 : l'accueil, la salle d'attente et la table. Le soin po
 **Écran d'accueil**
 
 - Saisie du surnom et choix de l'avatar dans une galerie (avatars générés, par exemple avec DiceBear)
-- « Créer une table » ouvre les réglages : petite et grosse blinde, tapis de départ, montée des blindes (par défaut +50 % toutes les 10 mains)
+- « Créer une table » ouvre les réglages : petite et grosse blinde, tapis de départ, montée des blindes (par défaut +100 % toutes les 5 mains)
 - Boutons « Créer une table » et « Rejoindre » avec le code
 - Profil mémorisé dans `localStorage` (avec `try/catch`)
 

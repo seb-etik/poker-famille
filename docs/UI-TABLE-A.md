@@ -358,3 +358,24 @@ du tableau ne loge que 3 paires de cartes). Règle retenue avec la famille (`sho
   tableau garde la mise en avant de la main gagnante.
 - Plusieurs gagnants : « Léo et Mamie se partagent 480 » sur la ligne sous le tableau.
 - Vérifié sans chevauchement (mesure des rectangles) à 1, 2, 3, 5 et 7 adversaires sur une table de 390 × 500.
+
+## V7 : réglages par défaut et pause d'abattage (17 octobre)
+
+Demandes de la famille ; aucun écran nouveau.
+
+### Pause après l'abattage : 8 s → 12 s
+
+- `PokerConfig.java` : `@WithDefault("12s")` sur `pauseAfterShowdown()` (au lieu de `"8s"`), pour laisser le temps
+  de lire les cartes et les étiquettes de la V6. La pause après un coucher (`pauseAfterFold`, 5 s) ne change pas.
+- Vérifier qu'aucun `poker.pause-after-showdown` dans `application.properties` ou dans `k8s/` ne la surcharge
+  (les tests peuvent garder leurs délais courts).
+
+### Montée des blindes par défaut : toutes les 5 mains, +100 %
+
+- Serveur, `TableSettings.DEFAULT` : `new TableSettings(10, 20, 1000, 5, 100)` (au lieu de `10, 50`).
+- Écran de création de table, `Home.svelte` : `everyHands: 5`, `percent: 100` ; le champ « Hausse (%) » accepte
+  déjà jusqu'à 200.
+- Progression obtenue avec les blindes par défaut : 10/20, 20/40, 40/80, 80/160, puis 150/300 (et non 160/320 :
+  160 n'est pas une valeur ronde, `BlindSchedule` arrondit à 150), 300/600… Vérifié par `TableSettingsTest`.
+- Mettre à jour les tests qui s'appuient sur l'ancien défaut, et `docs/PLAN.md` (section Interface : « par défaut
+  +100 % toutes les 5 mains »).

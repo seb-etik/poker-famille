@@ -27,8 +27,8 @@ Réponse `201 Created` :
 { "code": "KPRV" }
 ```
 
-- Valeurs par défaut : petite blinde 10, grosse blinde 20, tapis de départ 1000, blindes en hausse de 50 %
-  toutes les 10 mains.
+- Valeurs par défaut : petite blinde 10, grosse blinde 20, tapis de départ 1000, blindes en hausse de 100 %
+  toutes les 5 mains (10/20, 20/40, 40/80, 80/160, 150/300…).
 - Montée des blindes : `blindIncreaseEveryHands` de 1 à 100 (0 = blindes fixes), `blindIncreasePercent`
   de 10 à 200. À chaque niveau, la petite blinde monte du pourcentage, arrondie à une valeur ronde
   (1 à 10, puis 15, 20, 25, 30, 40, 50, 60, 80, 100…) et toujours en hausse ; la grosse garde le rapport
@@ -236,7 +236,7 @@ Réponse à `ping`, sans autre champ.
 - **Tapis** : un joueur qui s'assoit reçoit le tapis de départ. S'il se lève puis se rassoit, il retrouve
   son tapis précédent (le serveur le garde par `playerId`) : se relever ne recharge pas les jetons.
 - **Enchaînement** : après `start`, les mains s'enchaînent seules. Pause de 5 s après une main gagnée sans
-  abattage, 8 s après un abattage, pour laisser le temps de voir le résultat.
+  abattage, 12 s après un abattage, pour laisser le temps de lire les cartes montrées.
 - **Minuteur** : 30 s pour agir. À l'expiration, le serveur joue `check` si c'est possible, sinon `fold`.
 - **Déconnexion** : le joueur garde son siège et son tapis, `connected` passe à `false`. À son tour, le
   serveur joue tout de suite pour lui (`check` sinon `fold`) au lieu d'attendre 30 s.

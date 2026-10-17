@@ -17,7 +17,8 @@ public interface PokerConfig {
     @WithDefault("5s")
     Duration pauseAfterFold();
 
-    @WithDefault("8s")
+    /** Long enough to read the shown cards and their hand names. */
+    @WithDefault("12s")
     Duration pauseAfterShowdown();
 
     /** A table nobody is connected to is dropped after this delay. */

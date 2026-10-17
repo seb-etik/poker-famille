@@ -42,8 +42,8 @@
     bigBlind: 20,
     startingStack: 1000,
     rising: true,
-    everyHands: 10,
-    percent: 50,
+    everyHands: 5,
+    percent: 100,
   });
   const ready = $derived(profile.nickname.trim().length > 0 && profile.nickname.trim().length <= 20);
 
