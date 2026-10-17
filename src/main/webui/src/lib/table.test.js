@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   blindOf,
   headerBlindsText,
+  showdownStyle,
+  winnersLine,
   cardLabel,
   categoryLabel,
   dealDelay,
@@ -196,5 +198,41 @@ describe('headerBlindsText', () => {
 
   it('shows only the blinds when they are fixed', () => {
     expect(headerBlindsText(table(null, null))).toBe('Blindes 10 / 20');
+  });
+});
+
+describe('showdownStyle', () => {
+  it('shows the cards in large under the seat, with the full hand name, up to two opponents', () => {
+    expect(showdownStyle(1)).toEqual({ placement: 'below', width: 52, fullNames: true, labelWidth: 186, nudge: 0 });
+    expect(showdownStyle(2)).toEqual({ placement: 'below', width: 52, fullNames: true, labelWidth: 186, nudge: 0 });
+  });
+
+  it('keeps them under the seat but smaller with three opponents', () => {
+    expect(showdownStyle(3)).toEqual({ placement: 'below', width: 44, fullNames: true, labelWidth: 140, nudge: 14 });
+  });
+
+  it('puts them in place of the avatar, with short names, from four opponents on', () => {
+    expect(showdownStyle(4)).toEqual({ placement: 'avatar', width: 44, fullNames: false, labelWidth: null, nudge: 0 });
+    expect(showdownStyle(7)).toEqual({ placement: 'avatar', width: 44, fullNames: false, labelWidth: null, nudge: 0 });
+  });
+});
+
+describe('winnersLine', () => {
+  const result = (...winners) => ({ payouts: [{ amount: 480, winners: Object.fromEntries(winners) }], shownHands: {} });
+  const seats = [seat(0, { nickname: 'Léo' }), seat(1, { nickname: 'Mamie' }), seat(2, { nickname: 'Papa' })];
+
+  it('names the winner and what they won', () => {
+    expect(winnersLine(result([0, 480]), seats)).toBe('Léo gagne 480');
+  });
+
+  it('says when the pot is shared', () => {
+    expect(winnersLine(result([0, 240], [1, 240]), seats)).toBe('Léo et Mamie se partagent 480');
+    expect(winnersLine(result([0, 160], [1, 160], [2, 160]), seats)).toBe('Léo, Mamie et Papa se partagent 480');
+  });
+
+  it('adds up the pots won by the same player', () => {
+    const twoPots = { payouts: [{ amount: 300, winners: { 0: 300 } }, { amount: 200, winners: { 0: 200 } }] };
+
+    expect(winnersLine(twoPots, seats)).toBe('Léo gagne 500');
   });
 });

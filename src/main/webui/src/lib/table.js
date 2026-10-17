@@ -169,3 +169,35 @@ export function headerBlindsText(table) {
   }
   return `${blinds} · ${next} dans ${hands} main${hands > 1 ? 's' : ''}`;
 }
+
+/**
+ * How the shown cards of the opponents appear at the showdown (docs/UI-TABLE-A.md, V6), by number of opponents:
+ * under the seat with the full hand name while there is room, in place of the avatar with the short name beyond.
+ * labelWidth: the hand name stays on one line within it, so that it never reaches the board or a neighbour.
+ * nudge: with three opponents, NO and NE lean outwards by this many pixels to leave room for the label of N.
+ */
+export function showdownStyle(opponents) {
+  if (opponents <= 2) {
+    return { placement: 'below', width: 52, fullNames: true, labelWidth: 186, nudge: 0 };
+  }
+  if (opponents === 3) {
+    return { placement: 'below', width: 44, fullNames: true, labelWidth: 140, nudge: 14 };
+  }
+  return { placement: 'avatar', width: 44, fullNames: false, labelWidth: null, nudge: 0 };
+}
+
+/** The line under the board: "Léo gagne 480", or "Léo et Mamie se partagent 480". */
+export function winnersLine(result, seats) {
+  const won = new Map();
+  for (const payout of result.payouts) {
+    for (const [seat, amount] of Object.entries(payout.winners)) {
+      won.set(seat, (won.get(seat) ?? 0) + amount);
+    }
+  }
+  const names = [...won.keys()].map((seat) => seats[seat]?.nickname ?? `Siège ${Number(seat) + 1}`);
+  const total = [...won.values()].reduce((sum, amount) => sum + amount, 0);
+  if (names.length === 1) {
+    return `${names[0]} gagne ${total}`;
+  }
+  return `${names.slice(0, -1).join(', ')} et ${names.at(-1)} se partagent ${total}`;
+}

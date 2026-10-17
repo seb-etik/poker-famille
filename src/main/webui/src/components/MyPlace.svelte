@@ -5,7 +5,7 @@
 
   /**
    * My place, in the strip under the table: avatar with the timer ring, my two cards in large.
-   * turnText: "À toi · 20 pour suivre · 28 s" when it is my turn.
+   * turnText: "À toi · 20 pour suivre · 28 s" when it is my turn. handLabel: my hand at the showdown.
    * won: chips I won in the hand just finished, or 0. onLeave: "Se lever", shown while waiting.
    */
   let {
@@ -16,9 +16,9 @@
     toAct = false,
     remainingMs = null,
     actionSeconds = 30,
-    highlightCards = [],
     handNumber = 0,
     turnText = null,
+    handLabel = null,
     won = 0,
     onLeave = null,
   } = $props();
@@ -39,6 +39,7 @@
       {#if handRunning && seat.status === 'allIn'}Tapis{:else}{seat.stack} jetons{/if}
       {#if won > 0}<strong class="gain">+ {won}</strong>{/if}
     </div>
+    {#if handLabel}<div class="hand-label" class:won={won > 0}>{handLabel}</div>{/if}
     {#if turnText}<div class="turn">{turnText}</div>{/if}
     {#if onLeave}<button class="leave" onclick={onLeave}>Se lever</button>{/if}
   </div>
@@ -51,8 +52,7 @@
             <Card
               code={seat.cards?.[i] ?? null}
               width={70}
-              highlight={highlightCards.includes(seat.cards?.[i])}
-              dim={highlightCards.length > 0 && !highlightCards.includes(seat.cards?.[i])}
+              highlight={won > 0}
             />
           </span>
         {/each}
@@ -148,6 +148,19 @@
   .gain {
     margin-left: 6px;
     color: #ffd23f;
+  }
+  .hand-label {
+    display: inline-block;
+    margin-top: 2px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: rgb(0 0 0 / 0.7);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .hand-label.won {
+    background: #ffd23f;
+    color: #1a1a1a;
   }
   .turn {
     font-size: 14px;

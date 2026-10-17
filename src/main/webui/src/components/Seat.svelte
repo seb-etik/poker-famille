@@ -6,7 +6,9 @@
   /**
    * An opponent at the table (my own place is MyPlace). Its place and its bet are set by the table
    * (lib/layout.js); this component draws the avatar with its badges, its cards and its stack.
-   * shownHand: short name of the hand shown at the showdown ("Brelan"), in place of the stack.
+   * At the showdown (docs/UI-TABLE-A.md, V6): handLabel names the hand shown; placement 'below' puts the cards
+   * (showdownWidth px wide) under the seat with the label under them, 'avatar' puts them in place of the avatar
+   * with the label in place of the stack. A winner gets the gold style: label, outline of both cards, halo.
    */
   let {
     seat,
@@ -16,16 +18,22 @@
     toAct = false,
     remainingMs = null,
     actionSeconds = 30,
-    highlightCards = [],
     handNumber = 0,
     dealDelay = 0,
     winner = false,
-    shownHand = null,
+    handLabel = null,
+    placement = 'below',
+    showdownWidth = 52,
+    labelWidth = null,
+    nudge = 0,
+    labelAlign = 'center',
   } = $props();
 
   const progress = $derived(remainingMs == null ? 0 : Math.min(1, remainingMs / (actionSeconds * 1000)));
   const folded = $derived(seat.status === 'folded');
   const showdown = $derived(Boolean(seat.cards) && !handRunning);
+  const mode = $derived(!showdown ? 'fan' : placement === 'below' ? 'below' : 'in-avatar');
+  const cardHeight = $derived((showdownWidth * 243) / 167);
 </script>
 
 <div
@@ -34,7 +42,7 @@
   class:away={!seat.connected}
   class:to-act={toAct}
   class:winner
-  class:showing={showdown}
+  class:in-avatar={mode === 'in-avatar'}
   style="--progress: {progress}"
 >
   <div class="avatar">
@@ -46,15 +54,10 @@
   {#if seat.cards || seat.hasCards}
     <!-- Recreated on each hand, so that the new cards are dealt again. -->
     {#key handNumber}
-      <div class="cards" class:shown={showdown}>
+      <div class="cards {mode}" style={mode === 'below' ? `--nudge: ${nudge}px` : ''}>
         {#each [0, 1] as i (i)}
           <span class="slot slot-{i}" in:fromCenter|global={{ delay: i * 300 + dealDelay }}>
-            <Card
-              code={seat.cards?.[i] ?? null}
-              width={showdown ? 34 : 18}
-              highlight={highlightCards.includes(seat.cards?.[i])}
-              dim={highlightCards.length > 0 && !highlightCards.includes(seat.cards?.[i])}
-            />
+            <Card code={seat.cards?.[i] ?? null} width={showdown ? showdownWidth : 18} highlight={showdown && winner} />
           </span>
         {/each}
       </div>
@@ -62,10 +65,24 @@
   {/if}
 
   <div class="name">{seat.nickname}</div>
-  <!-- At the showdown the pill names the hand instead of the stack: no extra line, nothing hits the board. -->
-  <div class="stack" class:hand-name={shownHand}>
-    {#if shownHand}{shownHand}{:else if folded}Couché(e){:else if handRunning && seat.status === 'allIn'}Tapis{:else}{seat.stack}{/if}
-  </div>
+  {#if handLabel && mode === 'in-avatar'}
+    <!-- In place of the stack: no extra line, nothing reaches the board. -->
+    <div class="hand-label align-{labelAlign}">{handLabel}</div>
+  {:else}
+    <div class="stack">
+      {#if folded}Couché(e){:else if handRunning && seat.status === 'allIn'}Tapis{:else}{seat.stack}{/if}
+    </div>
+  {/if}
+  {#if handLabel && mode === 'below'}
+    <div
+      class="hand-label below"
+      class:small={showdownWidth < 52}
+      title={handLabel}
+      style="top: calc(100% + {cardHeight + 10}px); max-width: {labelWidth}px; --nudge: {nudge}px"
+    >
+      {handLabel}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -100,8 +117,14 @@
       conic-gradient(#ffd23f calc(var(--progress) * 360deg), #555 0) border-box;
     box-shadow: 0 0 12px #ffd23f;
   }
+  /* The winner of the hand: gold halo and gold nickname. */
   .winner .avatar {
+    border-color: #ffd23f;
+    box-shadow: 0 0 14px 3px rgb(255 210 63 / 0.7);
     animation: shine 1.2s ease-in-out 3;
+  }
+  .winner .name {
+    color: #ffd23f;
   }
   @keyframes shine {
     50% {
@@ -151,20 +174,73 @@
     margin-left: -8px;
     transform: rotate(8deg);
   }
-  /* At the showdown, the shown cards take the place of the avatar; the name and the hand stay below. */
-  .showing .avatar {
+  /* Shown cards under the seat, towards the centre (V6), overlapping by 14 px. */
+  /* nudge: NO and NE lean outwards a little, to leave room for the label of N. */
+  .cards.below {
+    top: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(calc(-50% + var(--nudge, 0px)));
+  }
+  /* Or in place of the avatar when the table is crowded. */
+  .in-avatar .avatar {
     visibility: hidden;
   }
-  .cards.shown {
-    top: 1px;
+  .cards.in-avatar {
+    top: 26px; /* the centre of the avatar */
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
   }
-  .cards.shown .slot {
+  .cards.below .slot,
+  .cards.in-avatar .slot {
     transform: none;
   }
-  .cards.shown .slot-1 {
-    margin-left: 2px;
+  .cards.below .slot-1,
+  .cards.in-avatar .slot-1 {
+    margin-left: -14px;
+  }
+  .cards.below :global(img),
+  .cards.in-avatar :global(img) {
+    box-shadow: -3px 0 6px rgb(0 0 0 / 0.35);
+  }
+
+  .hand-label {
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: rgb(0 0 0 / 0.7);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .hand-label.below {
+    padding: 1px 6px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(calc(-50% + var(--nudge, 0px)));
+    width: max-content;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hand-label.below.small {
+    font-size: 12px;
+  }
+  /* One line: a second one would reach the side seats below (O1, E1) on a full table. */
+  .in-avatar .hand-label {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  /* A side seat near the edge of the screen: its label grows towards the centre of the table. */
+  .in-avatar .hand-label.align-start {
+    align-self: flex-start;
+  }
+  .in-avatar .hand-label.align-end {
+    align-self: flex-end;
+  }
+  .winner .hand-label {
+    background: #ffd23f;
+    color: #1a1a1a;
   }
 
   .name {

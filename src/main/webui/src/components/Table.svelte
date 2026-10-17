@@ -14,8 +14,10 @@
     categoryLabel,
     dealDelay,
     headerBlindsText,
+    showdownStyle,
     soundFor,
     totalPot,
+    winnersLine,
     winningCards,
   } from '../lib/table.js';
   import { isMuted, play, setMuted } from '../lib/sounds.js';
@@ -78,35 +80,21 @@
     return seatLayout(numbers, mySeat);
   });
 
-  /** "Seb gagne 480" and the name of his hand, for each winner of the hand. */
-  function results(result) {
-    return result.payouts
-      .flatMap((payout) => Object.entries(payout.winners))
-      .reduce((merged, [seat, amount]) => {
-        const existing = merged.find((r) => r.seat === Number(seat));
-        if (existing) {
-          existing.amount += amount;
-        } else {
-          const shown = result.shownHands[seat];
-          merged.push({
-            seat: Number(seat),
-            name: state.seats[seat]?.nickname ?? `Siège ${Number(seat) + 1}`,
-            amount,
-            hand: shown ? handName(shown.category, shown.cards) : null,
-          });
-        }
-        return merged;
-      }, []);
-  }
-
   function myWinnings(result) {
     return result?.payouts.reduce((sum, payout) => sum + (payout.winners[mySeat] ?? 0), 0) ?? 0;
   }
 
-  // Under a seat: the short name ("Double paire"), the full one ("Double paire rois et 3") being too wide.
-  function shownHandOf(seatNumber) {
+  // Showdown (V6): cards in large under the seats while there is room, in place of the avatars beyond.
+  const showdown = $derived(showdownStyle(dealtSeats.length));
+
+  /** The hand a seat showed: in full ("Full aux 7 par les rois"), or short on a crowded table except for winners. */
+  function handLabelOf(seatNumber) {
     const shown = state.lastResult?.shownHands[seatNumber];
-    return shown && !handRunning ? categoryLabel(shown.category) : null;
+    if (!shown || handRunning) {
+      return null;
+    }
+    const full = showdown.fullNames || winnerSeats.has(seatNumber);
+    return full ? handName(shown.category, shown.cards) : categoryLabel(shown.category);
   }
 
   // Board length before the last update: the cards after it are the new ones to deal.
@@ -264,10 +252,8 @@
         <!-- Under the board: the pot, or the winners once the hand is over. -->
         <div class="under-board">
           {#if showingResult}
-            {#each results(state.lastResult) as result (result.seat)}
-              <div class="winner-line">{result.name} gagne {result.amount}</div>
-              {#if result.hand}<div class="winner-hand">{result.hand}</div>{/if}
-            {/each}
+            <!-- One line: the name of each hand is on its label. -->
+            <div class="winner-line">{winnersLine(state.lastResult, state.seats)}</div>
           {:else}
             <div class="pot"><span class="chip"></span>{totalPot(state)}</div>
           {/if}
@@ -283,10 +269,14 @@
               isButton={!waiting && hand?.buttonSeat === place.number}
               blind={waiting ? null : blindOf(hand, place.number)}
               {handRunning}
-              highlightCards={highlight}
               handNumber={hand?.number ?? 0}
-              winner={winnerSeats.has(place.number)}
-              shownHand={shownHandOf(place.number)}
+              winner={showingResult && winnerSeats.has(place.number)}
+              handLabel={handLabelOf(place.number)}
+              placement={showdown.placement}
+              showdownWidth={showdown.width}
+              labelWidth={showdown.labelWidth}
+              nudge={place.slot === 'NO' ? -showdown.nudge : place.slot === 'NE' ? showdown.nudge : 0}
+              labelAlign={place.slot.startsWith('O') ? 'start' : place.slot.startsWith('E') ? 'end' : 'center'}
               toAct={handRunning && hand.toActSeat === place.number}
               remainingMs={hand?.toActSeat === place.number ? remainingMs : null}
             />
@@ -316,12 +306,12 @@
         isButton={!waiting && hand?.buttonSeat === mySeat}
         blind={waiting ? null : blindOf(hand, mySeat)}
         {handRunning}
-        highlightCards={highlight}
         handNumber={hand?.number ?? 0}
         toAct={myTurn}
         remainingMs={myTurn ? remainingMs : null}
         {turnText}
         won={showingResult ? myWinnings(state.lastResult) : 0}
+        handLabel={mySeat !== null ? handLabelOf(mySeat) : null}
         onLeave={waiting ? () => connection.leave() : null}
       />
     {/if}
@@ -457,6 +447,10 @@
     transform: translateX(-50%);
     display: flex;
   }
+  /* No line box under the cards: the board ends where its cards end. */
+  .board > * {
+    line-height: 0;
+  }
   /* The cards overlap by 17 % of their width; the left corner (rank and suit) stays visible. */
   .board > * + * {
     margin-left: calc(var(--board-card) * -0.17);
@@ -492,12 +486,9 @@
     line-height: 1;
   }
   .winner-line {
-    font-size: 17px;
+    font-size: 22px;
     font-weight: 700;
     color: #ffd23f;
-  }
-  .winner-hand {
-    font-size: 14px;
   }
   .waiting {
     position: absolute;

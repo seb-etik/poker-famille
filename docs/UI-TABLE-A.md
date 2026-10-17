@@ -298,3 +298,63 @@ Sur ce cluster (Scaleway Kapsule), le plus petit volume persistant est de 1 Go f
 passer. L'historique des parties reste **en mémoire** (`ResultStore`) et le classement repart à zéro à chaque
 redémarrage du serveur (redéploiement). Pas de `results.json`, pas de `poker.results.file`, pas de
 `k8s/pvc.yaml` ni de changement du `Deployment`.
+
+## V6 : cartes des adversaires plus visibles à l'abattage (option 1 retenue le 17 octobre)
+
+Maquette dans le canevas, rangée « Mieux voir les cartes à l'abattage » : « Abattage 1 · En grand près de chaque
+joueur ». Demande de la famille : à la fin d'une main, on voit mal les cartes des adversaires et on ne comprend pas
+pourquoi on a gagné ou perdu.
+
+### Cartes montrées
+
+- `Seat.svelte` : à l'abattage, les cartes montrées passent de 34 px à **52 × 76** (au lieu de
+  `width={showdown ? 34 : 18}`), chevauchées de 14 px, ombre à gauche.
+- Placées **à côté du siège, côté centre de la table** (à droite pour O1/O2/NO, à gauche pour E1/E2/NE, en dessous
+  pour N), jamais sur la bande du tableau ni sur le pot. Les cartes cachées (18 × 26) disparaissent quand elles
+  sont retournées.
+- **De 6 à 7 adversaires** : 44 × 64 pour tenir sans chevauchement entre voisins (à vérifier sur la maquette V2 · 8
+  joueurs).
+- Les joueurs couchés ne montrent rien et restent grisés.
+
+### Nom de la main
+
+- Sous les cartes de chaque joueur montré, une étiquette avec le nom de sa main, en toutes lettres comme
+  aujourd'hui (`categoryLabel`) et si possible précisée : « Full aux 7 par les rois », « Paire de rois ».
+  Fond sombre, texte blanc, 13 px gras.
+- **Gagnant** : étiquette or (`#ffd23f`, texte foncé), contour or sur ses deux cartes, avatar avec halo or et surnom
+  en or. En cas de partage, tous les gagnants ont ce style.
+- **Ma main** : la même étiquette dans mon bandeau, sous mes jetons (« Brelan de rois »), or si j'ai gagné.
+
+### Tableau et centre
+
+- Inchangé par rapport à V3 : les cartes du tableau qui font la main gagnante remontent avec le contour or et
+  passent au premier plan, les autres à 45 %.
+- Sous le tableau, une seule ligne : « Léo gagne 480 » (or, 22 px). Le nom de la main est déjà sur l'étiquette.
+- Barre d'actions grisée pendant l'abattage, comme aujourd'hui.
+
+### Données
+
+- Rien à changer côté serveur : `lastResult.shownHands` donne déjà, pour chaque siège montré, la catégorie et les
+  5 cartes (`bestCards`). La précision « aux 7 par les rois » se déduit de `bestCards` côté client (fonction pure
+  dans `lib/table.js`, testée : full, brelan, paires, couleur, quinte, carte haute).
+- La pause après abattage reste à 8 s (`poker.pause-after-showdown`) ; à allonger à 10-12 s si la famille trouve
+  que ça passe trop vite.
+
+### Écarts décidés à l'implémentation (17 octobre)
+
+Le placement « à côté du siège » ne tient pas dans 390 px au-delà de quelques adversaires (cartes de NO et NE qui
+se chevauchent à 2 adversaires, qui tombent sur N à 3 et 5, qui touchent O1/E1 dès 4 ; à 7, la zone libre au-dessus
+du tableau ne loge que 3 paires de cartes). Règle retenue avec la famille (`showdownStyle` dans `lib/table.js`) :
+
+| Adversaires | Cartes montrées | Étiquette |
+| --- | --- | --- |
+| 1 ou 2 | 52 × 76 **sous** le siège (côté centre), avatar visible | nom complet, une ligne, 186 px max |
+| 3 | 44 × 64 sous le siège ; NO et NE écartés de 14 px vers l'extérieur | nom complet, une ligne, 140 px max, 12 px |
+| 4 à 7 | 44 × 64 **à la place de l'avatar** | nom court (« Double paire ») à la place du tapis ; nom complet pour le gagnant, aligné côté centre pour O1/O2/E1/E2 |
+
+- Les étiquettes restent sur une ligne pour ne jamais toucher le tableau ni un voisin ; les noms les plus longs
+  (« Full aux valets par les dames ») peuvent être coupés à 2 ou 3 adversaires, avec le nom complet en info-bulle.
+- Les cartes des perdants ne passent pas à 45 % (elles doivent rester lisibles pour comprendre la main) ; seul le
+  tableau garde la mise en avant de la main gagnante.
+- Plusieurs gagnants : « Léo et Mamie se partagent 480 » sur la ligne sous le tableau.
+- Vérifié sans chevauchement (mesure des rectangles) à 1, 2, 3, 5 et 7 adversaires sur une table de 390 × 500.
