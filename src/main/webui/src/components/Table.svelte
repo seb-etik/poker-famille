@@ -21,7 +21,7 @@
   import { isMuted, play, setMuted } from '../lib/sounds.js';
   import { dropIn, toCenter } from '../lib/transitions.js';
 
-  let { code, profile, onExit } = $props();
+  let { code, profile, onExit, onLeaderboard } = $props();
 
   // One connection for the life of this screen: App recreates it when the code changes.
   const connection = untrack(() => new TableConnection(code, $state.snapshot(profile)));
@@ -118,6 +118,8 @@
 
   // Seat of the game winner while the celebration is on screen.
   let victorySeat = $state(null);
+  // The winner's standing in the leaderboard of the month, sent with gameWon (null if the game did not count).
+  let victoryEvent = $state(null);
   // A new game has started: the celebration is over.
   $effect(() => {
     if (state?.table.winnerSeat === null) {
@@ -135,7 +137,10 @@
     }
     if (event.name === 'gameWon') {
       // Shown once the pot has flown to the winner.
-      setTimeout(() => (victorySeat = event.seat), 1500);
+      setTimeout(() => {
+        victoryEvent = event;
+        victorySeat = event.seat;
+      }, 1500);
     }
     if (event.name === 'board') {
       streetsInBatch++;
@@ -351,9 +356,10 @@
       <Victory
         seat={state.seats[victorySeat]}
         others={state.seats.filter((seat, n) => seat && n !== victorySeat)}
+        event={victoryEvent}
+        {onLeaderboard}
         onClose={() => (victorySeat = null)}
         onRestart={state.you.isHost ? () => connection.restart() : null}
-        {onExit}
       />
     {/if}
 

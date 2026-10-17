@@ -1,12 +1,18 @@
 <script>
   import { onDestroy } from 'svelte';
   import Avatar from './Avatar.svelte';
+  import { findMe, rankLabel, victoryPhrase } from '../lib/leaderboard.js';
 
   /**
    * seat: the winner's seat view; others: the other seated players.
+   * event: the gameWon event, with the winner's standing of the month when the game counted.
    * onRestart: only for the host, who can start a new game from here.
    */
-  let { seat, others = [], onClose, onRestart = null, onExit } = $props();
+  let { seat, others = [], event = null, onClose, onRestart = null, onLeaderboard } = $props();
+
+  const phrase = $derived(event ? victoryPhrase(event, seat.nickname) : null);
+  const top = $derived(event?.top ?? []);
+  const winnerInTop = $derived(findMe(top, seat.nickname));
 
   const COLORS = ['#ffd23f', '#d62839', '#2d66b3', '#1f7a4a', '#ffffff'];
   // Drawn once and kept discreet: few small pieces, falling slowly.
@@ -39,7 +45,20 @@
     <h2>{seat.nickname} remporte la partie</h2>
     <p class="total">{seat.stack} jetons</p>
 
-    {#if others.length > 0}
+    {#if phrase}<p class="phrase">{phrase}</p>{/if}
+
+    {#if top.length > 0}
+      <ol class="top">
+        {#each top as entry (entry.nickname)}
+          <li class:winner={entry === winnerInTop}>
+            <span class="rank">{rankLabel(entry.rank)}</span>
+            <span class="other"><Avatar id={entry.avatar} size="100%" /></span>
+            <span class="who">{entry.nickname}</span>
+            <span class="wins">{entry.wins}{#if entry === winnerInTop}<strong class="plus-one">+1</strong>{/if}</span>
+          </li>
+        {/each}
+      </ol>
+    {:else if others.length > 0}
       <div class="others">
         {#each others as other (other.seat)}
           <span class="other" title={other.nickname}><Avatar id={other.avatar} size="100%" /></span>
@@ -55,7 +74,7 @@
     {:else}
       <p class="wait">En attente de l'hôte pour rejouer…</p>
     {/if}
-    <button class="home" onclick={onExit}>Retour à l'accueil</button>
+    <button class="home" onclick={onLeaderboard}>Voir tout le classement</button>
   </div>
 </div>
 
@@ -129,6 +148,37 @@
   }
   .other :global(.emoji) {
     font-size: 20px;
+  }
+  .phrase {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.9;
+  }
+  .top {
+    list-style: none;
+    width: 100%;
+    margin: 4px 0;
+    padding: 0;
+  }
+  .top li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    text-align: left;
+  }
+  .top li.winner {
+    color: #ffd23f;
+    font-weight: 700;
+  }
+  .plus-one {
+    margin-left: 6px;
+  }
+  .top .rank {
+    width: 2.2em;
+  }
+  .top .who {
+    flex: 1;
   }
   .restart {
     display: flex;

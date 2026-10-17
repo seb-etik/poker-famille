@@ -1,11 +1,23 @@
 <script>
   import { untrack } from 'svelte';
   import Avatar from './Avatar.svelte';
+  import { fetchLeaderboard, findMe, profileLine, rankLabel } from '../lib/leaderboard.js';
   import { avatarKind, EMOJI_AVATARS, gallery } from '../lib/avatars.js';
   import { install, promptInstall } from '../lib/install.svelte.js';
   import { saveProfile } from '../lib/profile.js';
 
-  let { profile = $bindable(), presetCode = '', onEnter } = $props();
+  let { profile = $bindable(), presetCode = '', onEnter, onLeaderboard } = $props();
+
+  // The family leaderboard: top 3 of the month on a card, hidden while nobody has won a game yet.
+  let month = $state([]);
+  let everWon = $state(false);
+  fetchLeaderboard('month')
+    .then((entries) => (month = entries))
+    .catch(() => {});
+  fetchLeaderboard('all')
+    .then((entries) => (everWon = entries.length > 0))
+    .catch(() => {});
+  const myStanding = $derived(profile.nickname.trim() ? findMe(month, profile.nickname) : null);
 
   let code = $state(untrack(() => presetCode));
   let error = $state(null);
@@ -101,6 +113,8 @@
     {/if}
   </fieldset>
 
+  {#if myStanding}<p class="standing">{profileLine(myStanding)}</p>{/if}
+
   {#if !presetCode}
     {#if !showSettings}
       <button class="primary" disabled={!ready} onclick={() => (showSettings = true)}>Créer une table</button>
@@ -135,6 +149,27 @@
   </form>
 
   {#if error}<p class="error">{error}</p>{/if}
+
+  {#if everWon}
+    <section class="family">
+      <h2>Classement de la famille</h2>
+      {#if month.length === 0}
+        <p class="quiet">Pas encore de victoire ce mois-ci.</p>
+      {:else}
+        <ol>
+          {#each month.slice(0, 3) as entry (entry.nickname)}
+            <li>
+              <span class="rank">{rankLabel(entry.rank)}</span>
+              <span class="small-avatar"><Avatar id={entry.avatar} size="100%" /></span>
+              <span class="who">{entry.nickname}</span>
+              <span class="wins">{entry.wins} victoire{entry.wins > 1 ? 's' : ''}</span>
+            </li>
+          {/each}
+        </ol>
+      {/if}
+      <button type="button" class="see-all" onclick={onLeaderboard}>Voir tout le classement</button>
+    </section>
+  {/if}
 
   {#if install.prompt}
     <button class="install" onclick={promptInstall}>📲 Installer l'appli sur ce téléphone</button>
@@ -253,6 +288,67 @@
     flex: none;
   }
   .install {
+    background: none;
+    border: 1px solid #2b5a41;
+  }
+  .standing {
+    margin: -0.5rem 0 0;
+    color: #ffd23f;
+    font-weight: 600;
+  }
+  .family {
+    padding: 0.75rem;
+    border: 1px solid #2b5a41;
+    border-radius: 0.5rem;
+  }
+  .family h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+  }
+  .family ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .family li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+  }
+  .family .rank {
+    width: 2.2em;
+    font-weight: 700;
+  }
+  .family .small-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #0d3b26;
+    overflow: hidden;
+    flex: none;
+  }
+  .family .small-avatar :global(.emoji) {
+    font-size: 18px;
+  }
+  .family .who {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .family .wins {
+    font-size: 0.85rem;
+    opacity: 0.85;
+  }
+  .quiet {
+    margin: 0;
+    opacity: 0.75;
+  }
+  .see-all {
+    width: 100%;
+    margin-top: 0.5rem;
     background: none;
     border: 1px solid #2b5a41;
   }

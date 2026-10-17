@@ -197,3 +197,104 @@ Demande de la famille : le curseur de relance avance à l'unité, c'est trop pr�
 - Une petite fonction pure dans `lib/` (`raiseStep(bigBlind)` et `raiseStops(min, max, step)`), testée avec Vitest :
   cas du tableau ci-dessus, minimum non rond, tapis non rond, `min == max`.
 - Aucun changement serveur ni protocole : le serveur accepte déjà tout montant entre `minAmount` et `maxAmount`.
+
+## V5 : classement des victoires (17 octobre)
+
+Maquettes dans le canevas, rangée « Classement des victoires » : accès depuis l'accueil, page de la famille,
+fin de partie. Les noms et chiffres des maquettes sont des exemples.
+
+### Décisions
+
+- **Un joueur = son surnom**, comparé sans tenir compte des majuscules, des accents ni des espaces autour
+  (« Mamie », « mamie » et « Mamie  » sont la même personne). Le classement affiche le surnom et l'avatar de sa
+  dernière partie. Changer de surnom crée une nouvelle ligne : c'est accepté.
+- **Une victoire** = une partie terminée avec un seul joueur qui a encore des jetons, avec au moins 2 joueurs
+  au départ. Une partie abandonnée ou une table purgée ne compte pas. Chaque « Rejouer » est une nouvelle partie.
+- **Un seul classement pour toute l'instance** (c'est la famille), pas par table : les codes de table sont éphémères.
+- On enregistre l'**historique des parties**, pas des compteurs ; le classement est recalculé à la lecture.
+
+### Stockage : un fichier JSON sur un mini volume
+
+- Fichier `results.json` : liste de parties `{ "endedAt": "2026-10-17T11:02:00Z", "players": ["Mamie", "Seb", "Tessa"],
+  "winner": "Seb", "avatars": { "Seb": "lorelei:…", … } }` (surnoms tels que saisis ; la normalisation se fait au calcul).
+- Chemin configurable : `poker.results.file` dans `application.properties`, surchargé en production par la
+  variable `POKER_RESULTS_FILE=/data/results.json`. **Sans valeur (dev, tests), l'historique reste en mémoire.**
+- `ResultStore` (`@ApplicationScoped`) : charge le fichier au démarrage (absent → liste vide ; illisible → le
+  renommer en `results.json.broken-<date>` et repartir à vide, avec un log d'erreur) ; à chaque fin de partie,
+  ajoute l'entrée et réécrit le fichier de façon atomique (écriture dans `results.json.tmp` puis `Files.move` avec
+  `ATOMIC_MOVE`). Accès synchronisé. Le volume de données reste minuscule (quelques Ko par an).
+- Appel dans `GameTable` à l'endroit où `winnerSeat` est fixé (fin de partie), via une interface injectée
+  (comme `Outbox` / `Scheduler`) pour garder `GameTable` testable sans fichier.
+
+### Kubernetes
+
+Nouveau fichier `k8s/pvc.yaml`, ajouté aux `resources` de `kustomization.yaml` :
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: poker-famille-data
+  namespace: sbu
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 100Mi
+```
+
+Sans `storageClassName`, la classe par défaut du cluster est utilisée (`local-path` sur k3s : vérifier avec
+`kubectl get storageclass`). Dans `deployment.yaml` :
+
+```yaml
+    spec:
+      securityContext:
+        fsGroup: 1001            # le pod tourne en 1001 : il doit pouvoir écrire dans /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: poker-famille-data
+      containers:
+        - name: poker-famille
+          env:
+            - name: POKER_RESULTS_FILE
+              value: /data/results.json
+          volumeMounts:
+            - name: data
+              mountPath: /data
+```
+
+La stratégie `Recreate` et `replicas: 1` déjà en place sont indispensables avec un volume `ReadWriteOnce`.
+Si `local-path` ignore `fsGroup` et que l'écriture échoue (permission refusée), ajouter un `initContainer`
+`busybox` qui fait `chown 1001:1001 /data`.
+
+### API et protocole
+
+- `GET /api/leaderboard?period=month|all` → `[{ "nickname", "avatar", "wins", "games" }]` trié par victoires,
+  puis par pourcentage, puis par nombre de parties. `month` = mois civil en cours, fuseau `Europe/Paris`.
+- Événement `gameWon` enrichi pour l'écran de fin : `{ "seat", "wins": 6, "rank": 2, "top": [ {…}, {…}, {…} ] }`
+  (classement du mois après cette victoire).
+
+### Écrans
+
+- **Accueil** : sous le profil, « 2ᵉ du classement · 5 victoires » (rien si le surnom n'a jamais joué) ; carte
+  « Classement de la famille » avec le top 3 du mois et « Voir tout le classement ». Carte masquée tant que
+  l'historique est vide.
+- **Page Classement** (route `/classement`) : onglets « <mois en cours> » et « Depuis le début » ; podium des 3
+  premiers (le 1er au centre, plus haut, contour or) ; suite en liste avec victoires, parties et pourcentage ; ma
+  ligne en bas « Toi : 5 victoires sur 14 parties · 36 % » ; une phrase explique ce qui compte comme victoire.
+- **Fin de partie** : sous « Seb remporte la partie », une phrase (« 6ᵉ victoire du mois · plus qu'une pour rattraper
+  Mamie » / « prend la tête du classement ») et le top 3 du mois avec « +1 » sur le gagnant ; boutons « Rejouer »
+  (hôte) et « Voir tout le classement ».
+
+### Tests
+
+- Normalisation des surnoms, calcul du classement (égalités, mois en cours), fichier absent / corrompu,
+  écriture atomique, partie à 1 joueur non comptée, `Rejouer` qui compte une nouvelle partie.
+
+### Écart décidé à l'implémentation (17 octobre) : pas de persistance
+
+Sur ce cluster (Scaleway Kapsule), le plus petit volume persistant est de 1 Go facturé : la famille préfère s'en
+passer. L'historique des parties reste **en mémoire** (`ResultStore`) et le classement repart à zéro à chaque
+redémarrage du serveur (redéploiement). Pas de `results.json`, pas de `poker.results.file`, pas de
+`k8s/pvc.yaml` ni de changement du `Deployment`.

@@ -1,6 +1,7 @@
 <script>
   import { untrack } from 'svelte';
   import Home from './components/Home.svelte';
+  import Leaderboard from './components/Leaderboard.svelte';
   import Table from './components/Table.svelte';
   import { loadProfile } from './lib/profile.js';
 
@@ -26,10 +27,12 @@
 
 <svelte:window onpopstate={() => (path = location.pathname)} />
 
-{#if tableCode && entered}
+{#if path === '/classement'}
+  <Leaderboard {profile} onBack={() => navigate('/')} />
+{:else if tableCode && entered}
   {#key tableCode}
-    <Table code={tableCode} {profile} onExit={() => navigate('/')} />
+    <Table code={tableCode} {profile} onExit={() => navigate('/')} onLeaderboard={() => navigate('/classement')} />
   {/key}
 {:else}
-  <Home bind:profile presetCode={tableCode ?? ''} onEnter={enter} />
+  <Home bind:profile presetCode={tableCode ?? ''} onEnter={enter} onLeaderboard={() => navigate('/classement')} />
 {/if}
