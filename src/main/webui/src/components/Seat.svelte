@@ -6,7 +6,7 @@
   /**
    * An opponent at the table (my own place is MyPlace). Its place and its bet are set by the table
    * (lib/layout.js); this component draws the avatar with its badges, its cards and its stack.
-   * shownHand: name of the hand shown at the showdown, under the cards.
+   * shownHand: short name of the hand shown at the showdown ("Brelan"), in place of the stack.
    */
   let {
     seat,
@@ -62,10 +62,10 @@
   {/if}
 
   <div class="name">{seat.nickname}</div>
-  <div class="stack">
-    {#if folded}Couché(e){:else if handRunning && seat.status === 'allIn'}Tapis{:else}{seat.stack}{/if}
+  <!-- At the showdown the pill names the hand instead of the stack: no extra line, nothing hits the board. -->
+  <div class="stack" class:hand-name={shownHand}>
+    {#if shownHand}{shownHand}{:else if folded}Couché(e){:else if handRunning && seat.status === 'allIn'}Tapis{:else}{seat.stack}{/if}
   </div>
-  {#if shownHand}<div class="hand-name">{shownHand}</div>{/if}
 </div>
 
 <style>
@@ -181,9 +181,9 @@
     background: rgb(0 0 0 / 0.45);
     font-size: 12px;
   }
-  .hand-name {
-    font-size: 11px;
+  .stack.hand-name {
     color: #ffd23f;
+    font-size: 11px;
     white-space: nowrap;
   }
 

@@ -9,7 +9,15 @@
   import { TableConnection } from '../lib/connection.svelte.js';
   import { handName } from '../lib/hands.js';
   import { seatLayout } from '../lib/layout.js';
-  import { blindOf, dealDelay, headerBlindsText, soundFor, totalPot, winningCards } from '../lib/table.js';
+  import {
+    blindOf,
+    categoryLabel,
+    dealDelay,
+    headerBlindsText,
+    soundFor,
+    totalPot,
+    winningCards,
+  } from '../lib/table.js';
   import { isMuted, play, setMuted } from '../lib/sounds.js';
   import { dropIn, toCenter } from '../lib/transitions.js';
 
@@ -95,9 +103,10 @@
     return result?.payouts.reduce((sum, payout) => sum + (payout.winners[mySeat] ?? 0), 0) ?? 0;
   }
 
+  // Under a seat: the short name ("Double paire"), the full one ("Double paire rois et 3") being too wide.
   function shownHandOf(seatNumber) {
     const shown = state.lastResult?.shownHands[seatNumber];
-    return shown && !handRunning ? handName(shown.category, shown.cards) : null;
+    return shown && !handRunning ? categoryLabel(shown.category) : null;
   }
 
   // Board length before the last update: the cards after it are the new ones to deal.
@@ -251,7 +260,8 @@
         <div class="under-board">
           {#if showingResult}
             {#each results(state.lastResult) as result (result.seat)}
-              <div class="winner-line">{result.name} gagne {result.amount}{#if result.hand}<span class="winner-hand"> · {result.hand}</span>{/if}</div>
+              <div class="winner-line">{result.name} gagne {result.amount}</div>
+              {#if result.hand}<div class="winner-hand">{result.hand}</div>{/if}
             {/each}
           {:else}
             <div class="pot"><span class="chip"></span>{totalPot(state)}</div>
@@ -416,9 +426,10 @@
     width: 100%;
     max-width: 32rem;
     margin: 0 auto;
-    /* Board cards follow the height of the box: 64 × 93 at 500 px high, smaller on a short screen. */
+    /* Board cards follow the width of the table: five cards minus four overlaps fill it, 18 px from each side
+       (82 × 119 at 390 px wide). The cqh term only applies to a table less than 500 px high. */
     container-type: size;
-    --board-card: min(64px, 12.8cqh);
+    --board-card: min(82px, (100cqw + 20px) / 5, 16.4cqh);
   }
   /* The oval is wider than the screen: 18 px out on each side, the rail cut by the edges. */
   .felt {
@@ -434,11 +445,17 @@
 
   .board {
     position: absolute;
-    top: 56%;
+    top: 53.2%;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 6px;
+  }
+  /* The cards overlap by 17 % of their width; the left corner (rank and suit) stays visible. */
+  .board > * + * {
+    margin-left: calc(var(--board-card) * -0.17);
+  }
+  .board :global(img) {
+    box-shadow: -3px 0 6px rgb(0 0 0 / 0.35);
   }
   .slot-empty {
     width: var(--board-card);
@@ -447,16 +464,19 @@
     border: 1.5px dashed rgb(255 255 255 / 0.3);
     box-sizing: border-box;
   }
+  /* As wide as the free space between the low side seats (O2, E2). */
   .under-board {
     position: absolute;
-    top: calc(56% + var(--board-card) * 243 / 167 + 8px);
+    top: calc(53.2% + var(--board-card) * 243 / 167 + 11px);
     left: 50%;
     transform: translateX(-50%);
+    width: 54%;
     text-align: center;
-    white-space: nowrap;
+    line-height: 1.2;
   }
   .pot {
     display: flex;
+    justify-content: center;
     align-items: center;
     gap: 6px;
     font-size: 28px;
@@ -465,13 +485,12 @@
     line-height: 1;
   }
   .winner-line {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     color: #ffd23f;
   }
   .winner-hand {
-    font-weight: 400;
-    color: #fff;
+    font-size: 14px;
   }
   .waiting {
     position: absolute;

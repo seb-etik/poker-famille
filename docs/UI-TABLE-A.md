@@ -121,3 +121,48 @@ logique ; un siège qui se libère en cours de partie ne fait pas bouger les aut
 - **« Main suivante dans … » supprimé** (`Table.svelte`, vers la ligne 331) ; la main suivante démarre seule.
 - **Blindes par défaut 10 / 20** à la création d'une table (`Home.svelte` : `smallBlind: 10`, `bigBlind: 20`),
   et côté serveur `TableSettings.DEFAULT` (`new TableSettings(10, 20, 1000, 10, 50)`) ; tapis de 1 000 inchangé.
+
+## V3 : cartes du tableau plus grandes (option 2 retenue le 17 octobre)
+
+Maquette dans le canevas, rangée « Cartes du tableau plus grandes » : « Cartes 2 · Plus grandes, chevauchées ».
+Demande de la famille : les cartes du centre sont trop petites ; elles doivent être au moins aussi grandes que celles
+du joueur en bas (70 × 102).
+
+### Taille et chevauchement
+
+- Cartes du tableau en **82 × 119** sur un écran de 390 px (ratio 167 / 243 inchangé), soit plus grandes que ma main.
+- Les cartes se **chevauchent de 14 px** (environ 17 % de leur largeur) : `margin-left: calc(var(--board-card) * -0.17)`
+  à partir de la 2e. Le coin gauche de chaque carte (valeur et couleur) reste entièrement visible.
+- Ombre portée vers la gauche (`box-shadow: -3px 0 6px rgb(0 0 0 / 0.35)`) pour détacher chaque carte de la précédente.
+- La taille suit la **largeur** de la table, plus la hauteur : aujourd'hui `--board-card: min(64px, 12.8cqh)` rétrécit
+  les cartes sur iPhone dans Safari (barres du navigateur). Nouvelle règle :
+  `--board-card: min(82px, (100cqw + 20px) / 5, 16.4cqh)` ; 5 cartes moins 4 chevauchements occupent la largeur
+  moins 18 px de marge de chaque côté (82 px à 390 px de large, 76 px à 360 px). Le terme en `cqh` ne joue que sur
+  une table de moins de 500 px de haut.
+- Les emplacements vides (cartes pas encore sorties) ont la même taille et le même chevauchement, pour que les cartes
+  arrivent à leur place définitive.
+
+### Ajustements autour du tableau
+
+- Tableau remonté de 14 px : haut à 266 px dans la boîte de 500 (au lieu de 280), bas vers 385.
+- Pot juste en dessous, haut vers 396.
+- Sièges : O1 et E1 remontent de 8 px (centre d'avatar à 188 au lieu de 196) ; NO, NE et N remontent de 4 px
+  (88 et 58). O2 et E2 ne bougent pas. Les mises suivent leur siège.
+- Vérifier à 7 adversaires que les pastilles de tapis de O1/E1 ne touchent pas la première et la dernière carte.
+
+### Abattage
+
+- Les cartes de la main gagnante passent **au premier plan** (`z-index`) en plus de remonter de 8 px avec le contour or,
+  pour que le contour ne soit pas caché par la carte suivante ; les autres restent à 45 %.
+
+Mes cartes (`MyPlace.svelte`, 70 × 102) ne changent pas.
+
+### Écarts constatés à l'implémentation (17 octobre)
+
+- **O2 et E2 descendent de 10 px** (centre d'avatar à 420 au lieu de 410, mises avec eux) : avec le tableau de
+  82 × 119 (bas à 385), l'avatar de O2/E2 commençait à 384 et son éventail de cartes cachées à 376, sur le coin de la
+  première et de la dernière carte. À 420, l'éventail commence à 386 et le siège finit vers 489.
+- **Abattage à 7 adversaires** : la ligne du gagnant passait sur les cartes montrées de O2/E2, et le nom de main
+  ajouté sous les sièges faisait déborder O1/E1 sur le haut du tableau. Le gagnant s'affiche donc sur deux lignes
+  (« Seb gagne 480 », puis « Brelan de rois ») dans la largeur libre entre O2 et E2 ; sous chaque siège, la pastille
+  affiche la catégorie courte (« Double paire ») à la place du tapis pendant l'abattage, sans ligne en plus.

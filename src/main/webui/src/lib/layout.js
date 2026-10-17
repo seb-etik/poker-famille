@@ -2,16 +2,17 @@
 // there are, not on their seat numbers, so that nobody lands on the board or the pot.
 
 // Coordinates in the 390 × 500 box of the table: avatar centre, then the bet between the seat and the centre
-// (always above the board band, 280 to 373 px). S is the bottom place, only for a spectator of a full table.
+// (always above the board, which starts at 266 px). S is the bottom place, only for a spectator of a full table.
 const BOX = { width: 390, height: 500 };
 const SLOTS = {
-  N: { x: 195, y: 62, betX: 195, betY: 150 },
-  NO: { x: 100, y: 92, betX: 158, betY: 172 },
-  NE: { x: 290, y: 92, betX: 232, betY: 172 },
-  O1: { x: 44, y: 196, betX: 108, betY: 200 },
-  E1: { x: 346, y: 196, betX: 282, betY: 200 },
-  O2: { x: 44, y: 410, betX: 108, betY: 410 },
-  E2: { x: 346, y: 410, betX: 282, betY: 410 },
+  N: { x: 195, y: 58, betX: 195, betY: 146 },
+  NO: { x: 100, y: 88, betX: 158, betY: 168 },
+  NE: { x: 290, y: 88, betX: 232, betY: 168 },
+  O1: { x: 44, y: 188, betX: 108, betY: 192 },
+  E1: { x: 346, y: 188, betX: 282, betY: 192 },
+  // 10 px lower than the V2 design: at 410 their fan of hidden cards covered the corner of the larger board.
+  O2: { x: 44, y: 420, betX: 108, betY: 420 },
+  E2: { x: 346, y: 420, betX: 282, betY: 420 },
   S: { x: 195, y: 455, betX: 130, betY: 455 },
 };
 

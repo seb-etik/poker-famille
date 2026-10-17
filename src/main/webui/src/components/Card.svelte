@@ -62,7 +62,10 @@
     transform: rotateY(180deg);
   }
   /* The cards of the winning hand rise with a gold outline; the others fade. */
+  /* In front of its neighbours, so that the gold outline is not hidden by an overlapping card. */
   .highlight {
+    position: relative;
+    z-index: 1;
     transform: translateY(-8px);
   }
   .highlight img {

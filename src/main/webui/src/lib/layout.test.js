@@ -30,8 +30,19 @@ describe('seatLayout', () => {
     const [north] = seatLayout([3], 0);
 
     expect(north.left).toBeCloseTo(50);
-    expect(north.top).toBeCloseTo(12.4);
+    expect(north.top).toBeCloseTo(11.6); // 58 px
     expect(north.betTop).toBeGreaterThan(north.top);
-    expect(north.betTop).toBeLessThan(56); // above the board band (280 px)
+    expect(north.betTop).toBeLessThan(53.2); // above the board, which starts at 266 px
+  });
+
+  it('keeps the side seats above the board and the low ones beside it', () => {
+    const places = seatLayout([1, 2, 3, 4, 5, 6, 7], 0);
+    const bySlot = Object.fromEntries(places.map((place) => [place.slot, place]));
+
+    expect(bySlot.O1.top).toBeCloseTo(37.6); // 188 px
+    expect(bySlot.NO.top).toBeCloseTo(17.6); // 88 px
+    // 420 px: the avatar and its fan of hidden cards (8 px above it) start under the board, which ends at 385 px.
+    expect(bySlot.O2.top).toBeCloseTo(84);
+    expect(bySlot.O1.betTop).toBeLessThan(53.2);
   });
 });
