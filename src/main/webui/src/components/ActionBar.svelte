@@ -1,17 +1,24 @@
 <script>
   import { actionButtons } from '../lib/actions.js';
+  import { raiseStep, raiseStops } from '../lib/raise.js';
 
   /**
    * allowed: `allowedActions`, or null when it is not my turn (every button greyed, nothing moves).
-   * stack: my chips, shown on Tapis.
+   * stack: my chips, shown on Tapis. bigBlind: of the current level, sets the step of the slider.
    */
-  let { allowed, stack, onAct } = $props();
+  let { allowed, stack, bigBlind, onAct } = $props();
 
   const NONE = { types: [], callAmount: 0, minAmount: 0, maxAmount: 0 };
   const current = $derived(allowed ?? NONE);
   const canRaise = $derived(current.types.includes('bet') || current.types.includes('raise'));
-  // Writable derived: back to the minimum on each new turn, and the slider can move it.
-  let amount = $derived(current.minAmount);
+  // The slider moves over round amounts (half the big blind), plus the exact minimum and stack.
+  const stops = $derived(raiseStops(current.minAmount, current.maxAmount, raiseStep(bigBlind)));
+  // Writable derived: back to the first stop (the minimum) on each new turn, and the slider can move it.
+  let position = $derived.by(() => {
+    stops;
+    return 0;
+  });
+  const amount = $derived(stops[Math.min(position, stops.length - 1)]);
   const buttons = $derived(actionButtons(current, stack, amount));
 </script>
 
@@ -19,7 +26,15 @@
   {#if canRaise && current.maxAmount > current.minAmount}
     <div class="slider">
       <span>Relance</span>
-      <input type="range" min={current.minAmount} max={current.maxAmount} step="1" bind:value={amount} aria-label="Montant de la relance" />
+      <input
+        type="range"
+        min="0"
+        max={stops.length - 1}
+        step="1"
+        bind:value={position}
+        aria-label="Montant de la relance"
+        aria-valuetext={String(amount)}
+      />
       <strong>{amount}</strong>
     </div>
   {/if}

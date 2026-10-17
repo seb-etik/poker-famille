@@ -342,6 +342,7 @@
       <ActionBar
         allowed={myTurn ? state.allowedActions : null}
         stack={me.stack}
+        bigBlind={state.table.bigBlind}
         onAct={(action, amount) => connection.act(action, amount)}
       />
     {/if}

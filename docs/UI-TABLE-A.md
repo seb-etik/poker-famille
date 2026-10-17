@@ -166,3 +166,34 @@ Mes cartes (`MyPlace.svelte`, 70 × 102) ne changent pas.
   ajouté sous les sièges faisait déborder O1/E1 sur le haut du tableau. Le gagnant s'affiche donc sur deux lignes
   (« Seb gagne 480 », puis « Brelan de rois ») dans la largeur libre entre O2 et E2 ; sous chaque siège, la pastille
   affiche la catégorie courte (« Double paire ») à la place du tapis pendant l'abattage, sans ligne en plus.
+
+## V4 : pas de relance proportionnel aux blindes (17 octobre)
+
+Demande de la famille : le curseur de relance avance à l'unité, c'est trop précis.
+
+### Règle
+
+- **Pas du curseur** = la moitié de la grosse blinde courante, arrondie **vers le bas** à une valeur ronde de la
+  suite 1, 2, 5, 10, 25, 50, 100, 250, 500, 1 000… (au moins 1).
+
+| Blindes | Pas |
+| --- | --- |
+| 10 / 20 | 10 |
+| 15 / 30 | 10 |
+| 25 / 50 | 25 |
+| 50 / 100 | 50 |
+| 100 / 200 | 100 |
+
+- Positions possibles du curseur : `minAmount`, puis chaque multiple du pas strictement entre `minAmount` et
+  `maxAmount`, puis `maxAmount` (le tapis exact). Le minimum et le tapis restent donc toujours atteignables, même
+  s'ils ne sont pas ronds (ex. min 35 → 35, 40, 50, 60… ; tapis 957 → …, 940, 950, 957).
+- Le montant affiché (valeur du curseur et bouton « Relancer ») est toujours l'une de ces positions.
+
+### Implémentation (front seulement)
+
+- `ActionBar.svelte` : calculer le pas à partir de `state.table.bigBlind` ; construire la liste des positions ;
+  le curseur va de 0 au nombre de positions moins 1 (`step="1"`), et la valeur envoyée est la position choisie.
+  Plus simple et plus fiable qu'un `step` HTML sur les montants, qui ne gère pas un minimum ou un maximum non ronds.
+- Une petite fonction pure dans `lib/` (`raiseStep(bigBlind)` et `raiseStops(min, max, step)`), testée avec Vitest :
+  cas du tableau ci-dessus, minimum non rond, tapis non rond, `min == max`.
+- Aucun changement serveur ni protocole : le serveur accepte déjà tout montant entre `minAmount` et `maxAmount`.
